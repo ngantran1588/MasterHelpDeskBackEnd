@@ -1,3 +1,5 @@
+Note: Change to Bridged Adaptor for Ubuntu VM VirtualBox.
+
 ## 1.Verify SSH Server Installation and Status 
 One of the most common reasons for not being able to SSH into an Ubuntu machine is because the OpenSSH server hasn’t been installed. 
 To check if you have OpenSSH installed, run the following command: 
