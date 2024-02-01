@@ -1,4 +1,4 @@
-from src.models.server_manager import ServerManager
+from src.server_management.server_manager import ServerManager
 import os
 from dotenv import load_dotenv
 
@@ -17,9 +17,7 @@ if __name__ == "__main__":
     # Connect to the server
     server_manager.connect()
 
-
     # Execute the custom script on the server
-    # script_path = "../scripts/custom_script.sh"  # Adjust the path based on your folder structure
     server_manager.execute_script(script_path)
 
     # Disconnect from the server
