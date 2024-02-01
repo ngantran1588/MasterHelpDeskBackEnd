@@ -1,10 +1,15 @@
 from src.models.server_manager import ServerManager
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 if __name__ == "__main__":
+    
     # Replace these with your server details
-    server_hostname = "your_server_ip_or_hostname"
-    server_username = "your_username"
-    private_key_path = "/path/to/your/private/key"  # Replace with the actual path
+    server_hostname = os.environ.get("SERVER_HOSTNAME")
+    server_username = os.environ.get("SERVER_USERNAME")
+    private_key_path = os.environ.get("PRIVATE_KEY_PATH")
+    script_path = os.environ.get("SCRIPT_PATH")
 
     # Initialize the ServerManager with private key authentication
     server_manager = ServerManager(server_hostname, server_username, private_key_path=private_key_path)
@@ -12,8 +17,9 @@ if __name__ == "__main__":
     # Connect to the server
     server_manager.connect()
 
+
     # Execute the custom script on the server
-    script_path = "../scripts/custom_script.sh"  # Adjust the path based on your folder structure
+    # script_path = "../scripts/custom_script.sh"  # Adjust the path based on your folder structure
     server_manager.execute_script(script_path)
 
     # Disconnect from the server
