@@ -1,4 +1,5 @@
 import paramiko
+from getpass import getpass
 
 class ServerManager:
     def __init__(self, hostname, username, password=None, private_key_path=None):
@@ -36,6 +37,14 @@ class ServerManager:
 
             # Append additional arguments to the commands
             commands.extend(map(str, args))
+
+            # Check if sudo is required in any of the commands
+            sudo_required = any(command.startswith("sudo") for command in commands)
+
+            # Get the transport and authenticate with password if sudo is required
+            transport = self.client.get_transport()
+            if sudo_required:
+                transport.auth_password(self.username, getpass("Enter your password: "))
 
             # Execute each command on the remote server
             for command in commands:
