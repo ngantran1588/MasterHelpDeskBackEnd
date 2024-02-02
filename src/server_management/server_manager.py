@@ -1,4 +1,5 @@
 import paramiko
+from getpass import getpass
 
 class ServerManager:
     def __init__(self, hostname, username, password=None, private_key_path=None):
@@ -28,16 +29,41 @@ class ServerManager:
         except Exception as e:
             print(f"Error: {e}")
 
-    def execute_script(self, script_path):
+    def execute_script(self, script_path, *args):
         try:
             # Open the script file and read the commands
             with open(script_path, 'r') as script_file:
-                commands = script_file.read()
+                commands = script_file.read().splitlines()
+            
+            # Execute each command on the remote server
+            for command in commands:
+                # Check if the command starts with "sudo"
+                is_sudo_command = command.strip().startswith("sudo")
 
-            # Execute the commands on the remote server
-            stdin, stdout, stderr = self.client.exec_command(commands)
-            print(stdout.read().decode())
-            print(stderr.read().decode())
+                if is_sudo_command:
+                    attempts = 3
+                    while attempts > 0:
+                        password = getpass("Enter your password for sudo command: ")
+                        command_with_password = f"echo {password} | sudo -S {command[5:].replace('$1', str(args[0]))}"
+                        stdin, stdout, stderr = self.client.exec_command(command_with_password)
+                        error_output = stderr.read().decode()
+
+                        if "incorrect password attempt" not in error_output.lower():
+                            # Successful sudo command execution or other errors
+                            print(stdout.read().decode())
+                            print(error_output)
+                            break
+                        else:
+                            # Incorrect password, prompt for a new password
+                            print(f"Incorrect password. Attempts left: {attempts - 1}")
+                            attempts -= 1
+                            if attempts == 0:
+                                print("Cannot use sudo command because of wrong password")
+                else:
+                    # Execute non-sudo commands directly
+                    stdin, stdout, stderr = self.client.exec_command(command)
+                    print(stdout.read().decode())
+                    print(stderr.read().decode())
         except Exception as e:
             print(f"Error executing script: {e}")
 
