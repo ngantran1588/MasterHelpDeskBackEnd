@@ -28,16 +28,20 @@ class ServerManager:
         except Exception as e:
             print(f"Error: {e}")
 
-    def execute_script(self, script_path):
+    def execute_script(self, script_path, *args):
         try:
             # Open the script file and read the commands
             with open(script_path, 'r') as script_file:
-                commands = script_file.read()
+                commands = script_file.read().splitlines()
 
-            # Execute the commands on the remote server
-            stdin, stdout, stderr = self.client.exec_command(commands)
-            print(stdout.read().decode())
-            print(stderr.read().decode())
+            # Append additional arguments to the commands
+            commands.extend(map(str, args))
+
+            # Execute each command on the remote server
+            for command in commands:
+                stdin, stdout, stderr = self.client.exec_command(command)
+                print(stdout.read().decode())
+                print(stderr.read().decode())
         except Exception as e:
             print(f"Error executing script: {e}")
 

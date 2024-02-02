@@ -18,7 +18,19 @@ if __name__ == "__main__":
     server_manager.connect()
 
     # Execute the custom script on the server
-    server_manager.execute_script(script_path)
+    # server_manager.execute_script(script_path)
+
+    # Execute the show_status.sh script
+    server_manager.execute_script("src/scripts/firewall/show_status.sh")
+
+    # # Execute the allow_port.sh script with port 8080
+    # server_manager.execute_script("allow_port.sh", 8080)
+
+    # # Execute the deny_port.sh script with port 8080
+    # server_manager.execute_script("deny_port.sh", 8080)
+
+    # # Execute the allow_ip.sh script with IP address 192.168.1.1
+    # server_manager.execute_script("allow_ip.sh", "192.168.1.1")
 
     # Disconnect from the server
     server_manager.disconnect()
