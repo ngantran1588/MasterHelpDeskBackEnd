@@ -34,9 +34,13 @@ class ServerManager:
             # Open the script file and read the commands
             with open(script_path, 'r') as script_file:
                 commands = script_file.read().splitlines()
-            
+
             # Execute each command on the remote server
             for command in commands:
+                # Replace arguments in the command
+                for i, arg in enumerate(args):
+                    command = command.replace(f'${i + 1}', str(arg))
+
                 # Check if the command starts with "sudo"
                 is_sudo_command = command.strip().startswith("sudo")
 
@@ -44,8 +48,9 @@ class ServerManager:
                     attempts = 3
                     while attempts > 0:
                         password = getpass("Enter your password for sudo command: ")
-                        command_with_password = f"echo {password} | sudo -S {command[5:].replace('$1', str(args[0]))}"
-                        stdin, stdout, stderr = self.client.exec_command(command_with_password)
+                        # Replace arguments in the command
+                        full_command = f"echo {password} | sudo -S {command[5:]}"
+                        stdin, stdout, stderr = self.client.exec_command(full_command)
                         error_output = stderr.read().decode()
 
                         if "incorrect password attempt" not in error_output.lower():
@@ -58,7 +63,7 @@ class ServerManager:
                             print(f"Incorrect password. Attempts left: {attempts - 1}")
                             attempts -= 1
                             if attempts == 0:
-                                print("Cannot use sudo command because of wrong password")
+                                print("Cannot use sudo command because of the wrong password")
                 else:
                     # Execute non-sudo commands directly
                     stdin, stdout, stderr = self.client.exec_command(command)
