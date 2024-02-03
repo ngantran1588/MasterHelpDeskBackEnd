@@ -1,7 +1,7 @@
 #!/bin/bash
 
-sudo echo "export https_proxy=http://$1" >> /etc/environment
-echo "HTTPS Proxy configured successfully with host: $1"
+sudo sh -c 'echo "export https_proxy=http://$1:$2" | tee -a /etc/environment' sh "$1" "$2"
+echo "HTTPS Proxy configured successfully with host: $1 and port:$2"
 
 # Apply the changes
 source /etc/environment
