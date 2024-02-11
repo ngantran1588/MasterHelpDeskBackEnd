@@ -10,7 +10,7 @@ echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release
 sudo apt update
 
 # Install MongoDB
-sudo apt install -y mongodb-org
+sudo apt install -y mongodb-org --fix-missing
 
 # Output installation completion message
 echo "MongoDB installation completed."
