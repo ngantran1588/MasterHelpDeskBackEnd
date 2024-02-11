@@ -38,7 +38,7 @@ if __name__ == "__main__":
     # Execute the https_proxy.sh script with host proxy.fpt.edu.vn
     # server_manager.execute_script("src/scripts/proxy/https_proxy.sh", "proxy.fpt.edu.vn", 3128)
     # server_manager.execute_script("src/scripts/proxy/https_proxy.sh", "ahihi.com", 3000)
-    server_manager.execute_script("src/scripts/lib/install_pip.sh")
+    # server_manager.execute_script("src/scripts/lib/install_pip.sh")
     # server_manager.execute_script("src/scripts/lib/install_docker.sh")
 
     # Disconnect from the server
