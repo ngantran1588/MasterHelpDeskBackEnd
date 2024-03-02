@@ -1,5 +1,6 @@
 import paramiko
 from getpass import getpass
+import os
 
 class ServerManager:
     def __init__(self, hostname, username, password=None, private_key_path=None):
@@ -28,6 +29,20 @@ class ServerManager:
             print("Authentication failed, please verify your credentials.")
         except Exception as e:
             print(f"Error: {e}")
+
+    def execute_script_in_remote_server(self, script_relative_path, *args):
+        try:
+            # Construct the full path of the script on the server
+            script_full_path = f"bash {script_relative_path} {' '.join(args)}"
+
+            # Execute script on the remote server
+            stdin, stdout, stderr = self.client.exec_command(f"bash {script_full_path}")
+            # Print script output
+            print(stdout.read().decode())
+            print(stderr.read().decode())
+
+        except Exception as e:
+            print(f"Error executing script: {e}")
 
     def execute_script(self, script_path, *args):
         try:
@@ -71,6 +86,39 @@ class ServerManager:
                     print(stderr.read().decode())
         except Exception as e:
             print(f"Error executing script: {e}")
+
+    def get_file_name(file_path):
+        return os.path.basename(file_path)
+
+    def upload_file_to_remote(self, local_file_path, remote_file_path):
+        try:
+            # Upload the file to the remote server
+            sftp = self.client.open_sftp()
+            file_name = self.get_file_name(local_file_path)
+            remote_file_path = f"{remote_file_path}/{file_name}"
+            sftp.put(local_file_path, remote_file_path)
+            sftp.close()
+
+            print(f"File '{local_file_path}' uploaded to '{remote_file_path}' successfully.")
+
+        except Exception as e:
+            print(f"Error: {e}")
+       
+
+    def download_file_from_remote(self, remote_file_path, local_file_path):
+        try:
+            # Download the file from the remote server
+            sftp = self.client.open_sftp()
+            file_name = self.get_file_name(remote_file_path)
+            local_file_path = f"{local_file_path}/{file_name}"
+
+            sftp.get(remote_file_path, local_file_path)
+            sftp.close()
+
+            print(f"File '{remote_file_path}' downloaded to '{local_file_path}' successfully.")
+
+        except Exception as e:
+            print(f"Error: {e}")
 
     def disconnect(self):
         self.client.close()
