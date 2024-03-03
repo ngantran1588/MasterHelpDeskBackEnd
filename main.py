@@ -18,10 +18,16 @@ if __name__ == "__main__":
     server_manager.connect()
 
     # upload file
-    # server_manager.upload_file_to_remote("test.txt", "/home/user/test/test.txt")
+    # server_manager.upload_file_to_remote("test.txt", "/home/user/test2")
 
     # download file
-    server_manager.download_file_from_remote("/home/user/test/test.txt", "C:/Users/HP-PC/Downloads/test.txt")
+    # server_manager.download_file_from_remote("/home/user/test/test.txt", "C:/Users/HP-PC/Downloads/test.txt")
+
+    # upload folder
+    # server_manager.upload_folder("test2", "/home/user/")
+
+    # download folder
+    server_manager.download_folder("/home/user/test2", "C:/Users/HP-PC/Downloads")
 
     # # Execute the custom script on the server
     # server_manager.execute_script(script_path)
