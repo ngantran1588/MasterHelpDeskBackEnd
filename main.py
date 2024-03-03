@@ -17,6 +17,5 @@ if __name__ == "__main__":
     # Connect to the server
     server_manager.connect()
 
-
     # Disconnect from the server
     server_manager.disconnect()
