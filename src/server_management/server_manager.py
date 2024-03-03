@@ -4,6 +4,7 @@ import os
 import stat
 import zipfile
 import tempfile
+import errno
 
 class ServerManager:
     def __init__(self, hostname, username, password=None, private_key_path=None):
@@ -129,11 +130,11 @@ class ServerManager:
             for root, dirs, files in os.walk(local_folder):
                 # Construct the remote directory path
                 remote_dir = f"{remote_folder}{os.path.basename(local_folder)}"
-                try:
+      
+                if os.path.basename(remote_dir) not in sftp.listdir(os.path.dirname(remote_dir)):
                     # Create the remote directory if it doesn't exist
-                    sftp.mkdir(remote_dir, mode=755)
-                except FileExistsError:
-                    pass
+                    sftp.mkdir(remote_dir)
+
                 for file in files:
                     if os.path.dirname(os.path.join(root, file)) == local_folder:
                         local_path = f"{local_folder}/{os.path.basename(file)}"
@@ -143,29 +144,10 @@ class ServerManager:
                 # Recursively upload subfolders
                 for subdir in dirs:
                     self.upload_folder(f"{local_folder}/{subdir}", f"{remote_dir}/")
-            print("Uploaded")
             sftp.close()
-
         except Exception as e:
             print(f"Error: {e}")
  
-    # def download_folder(self, remote_folder, local_folder):
-    #     try: 
-    #         sftp = self.client.open_sftp()
-    #         for entry in sftp.listdir_attr(remote_folder):
-    #             remote_path = f"{remote_folder}/{entry.filename}"
-    #             local_path = f"{local_folder}/{entry.filename}"
-    #             if stat.S_ISDIR(entry.st_mode):
-    #                 # If it's a directory, recursively download it
-    #                 os.makedirs(local_path, exist_ok=True)
-    #                 self.download_folder(remote_path, local_path)
-    #             else:
-    #                 # If it's a file, download it
-    #                 sftp.get(remote_path, local_path)
-    #         print("Downloaded")
-    #         sftp.close()
-    #     except Exception as e:
-    #         print(f"Error: {e}")
     def download_folder(self, remote_folder, local_zip_file):
         try:
             sftp = self.client.open_sftp()
