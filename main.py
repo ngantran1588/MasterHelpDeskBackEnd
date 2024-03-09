@@ -17,5 +17,7 @@ if __name__ == "__main__":
     # Connect to the server
     server_manager.connect()
 
+    server_manager.upload_file_to_remote("src/scripts/execute_code/execute_code.sh", "/root/julia")
+
     # Disconnect from the server
     server_manager.disconnect()
