@@ -14,6 +14,7 @@ from ..const import const
 class Auth:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
+        self.db.connect()
 
     def generate_user_id(self, username: str) -> str:
         # Get current time
@@ -121,7 +122,7 @@ class Auth:
             print("Error signing up:", e)
             return False
 
-    def forgot_password(self, email: str) -> bool:
+    def send_otp(self, email: str) -> bool:
         # Generate OTP
         otp = self.generate_otp()
 
@@ -168,3 +169,39 @@ class Auth:
             print("Expired OTP deleted from the database.")
         except Exception as e:
             print("Error deleting expired OTP:", e)
+
+    # Delete all OTP by email
+    def delete_otp_email(self, email: str) -> None:
+        current_time = datetime.now()
+        query = "DELETE FROM tbl_otp WHERE email = %s"
+        values = (email)
+        try:
+            self.db.execute_query(query, values)
+            print("OTP from email deleted from the database.")
+        except Exception as e:
+            print("Error deleting OTP from email:", e)
+
+    # Change password
+    def change_password(self, username, new_password, old_password):
+        query = "SELECT user_id, password from tbl_customer WHERE username = %s"
+        value = (username)
+
+        try:
+            result = self.db.execute_query(query, value)
+            user_id, stored_password = result[0]
+
+            if self.compare_passwords(user_id, old_password, stored_password):
+                return "Old password is incorrect", False
+            
+            new_password = self.encrypt_password(new_password, user_id)
+
+            query = "UPDATE tbl_customer SET password = %s WHERE username = %s"
+            values = (new_password, username)
+
+            result = self.db.execute_query(query, values)
+            return "Update password successfully", True
+        except Exception as e:
+            print("Error changing password:", e)
+
+        
+
