@@ -3,14 +3,11 @@ import os
 from dotenv import load_dotenv
 from flask import Flask
 from flask_session import Session
-from src.api import auth
+from src.api.auth import auth_bp
 from src.models.auth import Auth
-from src.database import connector
 import secrets
 
 load_dotenv()
-db = connector.DBConnector()
-authen = Auth(db)
 
 def create_app():
     app = Flask(__name__)
@@ -21,7 +18,7 @@ def create_app():
     Session(app)
 
     # Register blueprints
-    app.register_blueprint(auth, url_prefix='/auth')
+    app.register_blueprint(auth_bp, url_prefix='/auth')
 
     return app
 

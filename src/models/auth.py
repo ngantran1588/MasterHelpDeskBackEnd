@@ -8,8 +8,8 @@ import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-from database import connector
-from const import const
+from ..database import connector
+from ..const import const
 
 class Auth:
     def __init__(self, db: connector.DBConnector) -> None:
@@ -148,14 +148,23 @@ class Auth:
         result = self.db.execute_query(query, values)
         return result[0][0] > 0
 
+    # Delete used OTP
     def delete_used_otp(self, email: str, otp: str) -> None:
         query = "DELETE FROM tbl_otp WHERE email = %s AND otp = %s"
         values = (email, otp)
         try:
-            self.db.self.dbect()
             self.db.execute_query(query, values)
             print("Used OTP deleted from the database.")
         except Exception as e:
             print("Error deleting used OTP:", e)
-        finally:
-            self.db.close()
+
+    # Delete expired OTP
+    def delete_expired_otp(self) -> None:
+        current_time = datetime.now()
+        query = "DELETE FROM tbl_otp WHERE expiration_time < %s"
+        values = (current_time)
+        try:
+            self.db.execute_query(query, values)
+            print("Expired OTP deleted from the database.")
+        except Exception as e:
+            print("Error deleting expired OTP:", e)
