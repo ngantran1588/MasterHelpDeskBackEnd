@@ -110,7 +110,7 @@ def change_password():
     username = data["username"]
     old_password = data["old_password"]
     new_password = data["new_password"]
-
+    
     message, status = auth.change_password(username, new_password, old_password)
 
     if status:

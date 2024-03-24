@@ -44,11 +44,13 @@ class DBConnector:
             else:
                 cursor.execute(query)
             
-            # Fetch the result if any
-            result = cursor.fetchall()
-            
-            # Commit the transaction (if needed)
-            self.conn.commit()
+            # Commit the transaction for insert/update/delete/alter operations
+            query_lower = query.strip().lower()
+            if any(keyword in query_lower for keyword in ["insert", "update", "delete", "alter"]):
+                self.conn.commit()
+            else:
+                # Fetch the result if it's a select operation
+                result = cursor.fetchall()
         except psycopg2.Error as e:
             print("Error executing query:", e)
         finally:

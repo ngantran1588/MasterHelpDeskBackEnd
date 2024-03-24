@@ -3,7 +3,7 @@ import hashlib
 from datetime import datetime, timedelta
 import random
 import string
-import smtplib
+import smtplib, ssl
 import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -42,17 +42,17 @@ class Auth:
 
     def compare_passwords(self, user_id, entered_password, stored_password):
         # Hash the entered password using the same method as the stored password
-        hashed_entered_password = self.encrypt_password(user_id, entered_password)
+        hashed_entered_password = self.encrypt_password(entered_password, user_id)
 
         # Compare the hashed entered password with the stored password
         return hashed_entered_password == stored_password
 
     # Simple OTP generation function
-    def generate_otp():
+    def generate_otp(self):
         return ''.join(random.choices(string.digits, k=6))
 
     # Email sending function
-    def send_email(email, otp):
+    def send_email(self, email, otp):
         sender_email = os.environ.get("OTP_EMAIL")
         receiver_email = email
         password = os.environ.get("OTP_EMAIL_PASS")
@@ -67,7 +67,11 @@ class Auth:
         message.attach(MIMEText(text, "plain"))
         gmail_host = os.environ.get("GMAIL_HOST")
         gmail_port = os.environ.get("GMAIL_PORT")
-        with smtplib.SMTP_SSL("smtp.example.com", 465) as server:
+        context = ssl.create_default_context()
+        with smtplib.SMTP(gmail_host, gmail_port) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.ehlo()
             server.login(sender_email, password)
             server.sendmail(sender_email, receiver_email, message.as_string())
 
@@ -162,17 +166,17 @@ class Auth:
     # Delete expired OTP
     def delete_expired_otp(self) -> None:
         current_time = datetime.now()
+    
         query = "DELETE FROM tbl_otp WHERE expiration_time < %s"
-        values = (current_time)
+        value = (current_time,)
         try:
-            self.db.execute_query(query, values)
+            self.db.execute_query(query, value)
             print("Expired OTP deleted from the database.")
         except Exception as e:
             print("Error deleting expired OTP:", e)
 
     # Delete all OTP by email
     def delete_otp_email(self, email: str) -> None:
-        current_time = datetime.now()
         query = "DELETE FROM tbl_otp WHERE email = %s"
         values = (email)
         try:
@@ -183,8 +187,8 @@ class Auth:
 
     # Change password
     def change_password(self, username, new_password, old_password):
-        query = "SELECT user_id, password from tbl_customer WHERE username = %s"
-        value = (username)
+        query = "SELECT customer_id, password from tbl_customer WHERE username = %s"
+        value = (username,)
 
         try:
             result = self.db.execute_query(query, value)
@@ -198,7 +202,7 @@ class Auth:
             query = "UPDATE tbl_customer SET password = %s WHERE username = %s"
             values = (new_password, username)
 
-            result = self.db.execute_query(query, values)
+            self.db.execute_query(query, values)
             return "Update password successfully", True
         except Exception as e:
             print("Error changing password:", e)
