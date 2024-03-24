@@ -3,7 +3,7 @@ import hashlib
 from datetime import datetime, timedelta
 import random
 import string
-import smtplib
+import smtplib, ssl
 import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -14,6 +14,7 @@ from ..const import const
 class Auth:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
+        self.db.connect()
 
     def generate_user_id(self, username: str) -> str:
         # Get current time
@@ -41,17 +42,17 @@ class Auth:
 
     def compare_passwords(self, user_id, entered_password, stored_password):
         # Hash the entered password using the same method as the stored password
-        hashed_entered_password = self.encrypt_password(user_id, entered_password)
+        hashed_entered_password = self.encrypt_password(entered_password, user_id)
 
         # Compare the hashed entered password with the stored password
         return hashed_entered_password == stored_password
 
     # Simple OTP generation function
-    def generate_otp():
+    def generate_otp(self):
         return ''.join(random.choices(string.digits, k=6))
 
     # Email sending function
-    def send_email(email, otp):
+    def send_email(self, email, otp):
         sender_email = os.environ.get("OTP_EMAIL")
         receiver_email = email
         password = os.environ.get("OTP_EMAIL_PASS")
@@ -66,7 +67,11 @@ class Auth:
         message.attach(MIMEText(text, "plain"))
         gmail_host = os.environ.get("GMAIL_HOST")
         gmail_port = os.environ.get("GMAIL_PORT")
-        with smtplib.SMTP_SSL("smtp.example.com", 465) as server:
+        context = ssl.create_default_context()
+        with smtplib.SMTP(gmail_host, gmail_port) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.ehlo()
             server.login(sender_email, password)
             server.sendmail(sender_email, receiver_email, message.as_string())
 
@@ -121,7 +126,7 @@ class Auth:
             print("Error signing up:", e)
             return False
 
-    def forgot_password(self, email: str) -> bool:
+    def send_otp(self, email: str) -> bool:
         # Generate OTP
         otp = self.generate_otp()
 
@@ -161,10 +166,46 @@ class Auth:
     # Delete expired OTP
     def delete_expired_otp(self) -> None:
         current_time = datetime.now()
+    
         query = "DELETE FROM tbl_otp WHERE expiration_time < %s"
-        values = (current_time)
+        value = (current_time,)
         try:
-            self.db.execute_query(query, values)
+            self.db.execute_query(query, value)
             print("Expired OTP deleted from the database.")
         except Exception as e:
             print("Error deleting expired OTP:", e)
+
+    # Delete all OTP by email
+    def delete_otp_email(self, email: str) -> None:
+        query = "DELETE FROM tbl_otp WHERE email = %s"
+        values = (email)
+        try:
+            self.db.execute_query(query, values)
+            print("OTP from email deleted from the database.")
+        except Exception as e:
+            print("Error deleting OTP from email:", e)
+
+    # Change password
+    def change_password(self, username, new_password, old_password):
+        query = "SELECT customer_id, password from tbl_customer WHERE username = %s"
+        value = (username,)
+
+        try:
+            result = self.db.execute_query(query, value)
+            user_id, stored_password = result[0]
+
+            if self.compare_passwords(user_id, old_password, stored_password):
+                return "Old password is incorrect", False
+            
+            new_password = self.encrypt_password(new_password, user_id)
+
+            query = "UPDATE tbl_customer SET password = %s WHERE username = %s"
+            values = (new_password, username)
+
+            self.db.execute_query(query, values)
+            return "Update password successfully", True
+        except Exception as e:
+            print("Error changing password:", e)
+
+        
+
