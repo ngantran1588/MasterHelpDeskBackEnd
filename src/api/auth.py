@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 from ..database import connector
-from ..models.auth import Auth 
+from ..database.auth import Auth
 from ..database.load_env import LoadDBEnv
 
 
@@ -93,6 +93,7 @@ def verify_otp():
     otp = data["otp"]
 
     if auth.verify_otp(email, otp):
+        session['username'] = auth.get_username_from_email(email)
         auth.delete_used_otp(email, otp)
         db.close()
         return jsonify({'message': 'OTP verified successfully'}), 200
@@ -110,6 +111,9 @@ def change_password():
     username = data["username"]
     old_password = data["old_password"]
     new_password = data["new_password"]
+
+    if session["username"] != username:
+        return jsonify({'message': "You don't have permission"}), 403 
     
     message, status = auth.change_password(username, new_password, old_password)
 
