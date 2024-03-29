@@ -10,8 +10,8 @@ class Organization:
              description: str = None,
              contact_phone: str = None,
              contact_email: str = None,
-             expiration_date: datetime = None) -> None:
-        self.organization_id = self.generate_user_id(name)
+             orgMember: list[str] = None) -> None:
+        self.organization_id = self.generate_organization_id(name)
         self.name = name
         self.customer_id = customer_id
         self.organization_status = organization_status
@@ -19,8 +19,7 @@ class Organization:
         self.description = description
         self.contact_phone = contact_phone
         self.contact_email = contact_email
-        self.expiration_date = expiration_date
-
+        self.orgMember = orgMember
 
     def generate_organization_id(self, name: str) -> str:
         # Get current time

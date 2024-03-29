@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
-import connector
+from . import connector
 from ..const import const
-from ..models.auth import Auth as auth
+from ..models.auth import Auth as AuthAPI 
 
 class Auth:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
         self.db.connect()
+        self.auth = AuthAPI()
 
     def exist_username(self, username: str) -> bool:
         user_data = self.db.execute_query("SELECT customer_id FROM tbl_customer WHERE username = %s", (username,))
@@ -27,18 +28,18 @@ class Auth:
         if user_data:
             # Extract user_id and stored_password from the retrieved data
             customer_id, stored_password = user_data[0]
-
+            
             # Compare the hashed entered password with the stored password
-            return auth.compare_passwords(customer_id, password, stored_password)
+            return self.auth.compare_passwords(customer_id, password, stored_password)
         else:
             return False
     
     def sign_up(self, username: str, password: str, full_name: str, email: str) -> bool:
         # Generate a unique user ID for the customer
-        customer_id = auth.generate_user_id(username)
+        customer_id = self.auth.generate_user_id(username)
 
         # Encrypt the password
-        encrypted_password = auth.encrypt_password(password, customer_id)
+        encrypted_password = self.auth.encrypt_password(password, customer_id)
 
         # Check if the username already exists
         if self.exist_username(username):
@@ -55,8 +56,7 @@ class Auth:
             INSERT INTO tbl_customer (customer_id, username, password, full_name, email, role_id, status, organization_id)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
-
-        role_id = const.ROLE_ID_USER
+        role_id = [const.ROLE_ID_USER]
         status = const.STATUS_ACTIVE
         organization_id = const.NULL_VALUE
 
@@ -70,12 +70,66 @@ class Auth:
             print("Error signing up:", e)
             return False
 
+    # Change from User to Super User
+    def change_role_to_superuser(self, username: str) -> bool:
+        query = "SELECT role_id from tbl_customer WHERE username = %s"
+        value = (username,)
+        result = self.db.execute_query(query, value)
+        try:
+            new_role_id = result[0]
+            new_role_id[0] = const.ROLE_ID_SUPER_USER
+            query = "UPDATE tbl_customer SET role_id = %s WHERE username = %s"
+            values = (new_role_id, username)
+
+            self.db.execute_query(query, values)
+            return "Update role successfully", True
+        except Exception as e:
+            print("Error changing role:", e)
+
+    # Change from Super User to User
+    def change_role_to_user(self, username: str) -> bool:
+        query = "SELECT role_id from tbl_customer WHERE username = %s"
+        value = (username,)
+        result = self.db.execute_query(query, value)
+        try:
+            new_role_id = result[0]
+            new_role_id[0] = const.ROLE_ID_USER
+            query = "UPDATE tbl_customer SET role_id = %s WHERE username = %s"
+            values = (new_role_id, username)
+
+            self.db.execute_query(query, values)
+            return "Update role successfully", True
+        except Exception as e:
+            print("Error changing role:", e)
+
+    def change_role(self, username: str, role_id: list[str]) -> bool:
+        query = "SELECT role_id from tbl_customer WHERE username = %s"
+        value = (username,)
+        result = self.db.execute_query(query, value)
+        new_role_id = [result[0][0]]
+        new_role_id.append(role_id)
+
+        try:
+            query = "UPDATE tbl_customer SET role_id = %s WHERE username = %s"
+            values = (new_role_id, username)
+
+            self.db.execute_query(query, values)
+            return "Update role successfully", True
+        except Exception as e:
+            print("Error changing role:", e)
+
     def send_otp(self, email: str) -> bool:
+
+        # Check if the email already exists
+        if self.exist_email(email) == False:
+            print("Email does not exist.")
+            return False
+        
         # Generate OTP
-        otp = auth.generate_otp()
+        otp = self.auth.generate_otp()
 
         # Send OTP email
-        auth.send_email(email, otp)
+        self.auth.send_email(email, otp)
 
         # Store OTP in the database with expiration time
         expiration_time = datetime.now() + timedelta(minutes=5)
@@ -163,3 +217,18 @@ class Auth:
             return username
         except Exception as e:
             print("Error get username from email:", e)
+
+    def check_role(self, username: str) -> bool:
+        try:
+            query = "SELECT role_id FROM tbl_customer WHERE username = %s"
+            values = (username,)
+            result = self.db.execute_query(query, values)
+            
+            if result:
+                return const.ROLE_ID_SUPER_USER in result[0]  
+            else:
+                print("User not found or has no roles.")
+                return False
+        except Exception as e:
+            print("Error checking user role:", e)
+            return False

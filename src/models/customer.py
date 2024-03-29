@@ -6,7 +6,7 @@ class Customer:
                  password: str = None,
                  full_name: str = None,
                  email: str = None,
-                 role_id: str = None,
+                 role_id: list[str] = None,
                  status: str = None,
                  organization_id: str = None) -> None:
         self.customer_id = auth.generate_user_id(username)
