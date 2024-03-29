@@ -27,6 +27,9 @@ def add_organization():
     if auth.check_role(username) == False:
         return jsonify({"message": "Permission denied"}), 403
 
+    if org.check_organization_name_exist(name):
+        return jsonify({"message": "Organization name exists"}), 500
+
     success = org.add_organization(name, contact_phone, contact_email, description, username, org_member)
 
     db.close()
@@ -92,3 +95,118 @@ def change_organization_status():
         return jsonify({"message": "Organization status changed successfully"}), 200
     else:
         return jsonify({"message": "Failed to change organization status"}), 500
+    
+
+@organization_bp.route("/update_information", methods=["PUT"])
+def update_organization_information():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    org = Organization(db)
+
+    organization_id = request.json["organization_id"]
+    name = request.json["name"]
+    contact_phone = request.json["contact_phone"]
+    contact_email = request.json["contact_email"]
+    description = request.json["description"]
+
+    if org.check_user_access(session["username"], organization_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    success = org.update_information(name, contact_phone, contact_email, description, organization_id)
+
+    db.close()
+
+    if success:
+        return jsonify({"message": "Organization information updated successfully"}), 200
+    else:
+        return jsonify({"message": "Failed to update organization information"}), 500
+
+@organization_bp.route("/add_user", methods=["PUT"])
+def add_user():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    org = Organization(db)
+
+    organization_id = request.json["organization_id"]
+    new_user = request.json["new_user"]
+
+    if org.check_user_access(session["username"], organization_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    success = org.add_user(organization_id, new_user)
+
+    db.close()
+
+    if success:
+        return jsonify({"message": "User added to organization successfully"}), 200
+    else:
+        return jsonify({"message": "Error adding user to organization:"}), 500
+
+@organization_bp.route("/remove_user", methods=["PUT"])
+def remove_user():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    org = Organization(db)
+
+    organization_id = request.json["organization_id"]
+    remove_username = request.json["remove_username"]
+
+    if org.check_user_access(session["username"], organization_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    success = org.remove_user(organization_id, remove_username)
+
+    db.close()
+
+    if success:
+        return jsonify({"message": "User removed from organization successfully"}), 200
+    else:
+        return jsonify({"message": "Failed to remove user from organization"}), 500
+
+@organization_bp.route("/get_number_of_users/<organization_id>", methods=["GET"])
+def get_number_of_users(organization_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    org = Organization(db)
+
+    if org.check_user_access(session["username"], organization_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    try:
+        number_users = org.get_number_of_users(organization_id)
+        db.close()
+        return jsonify({"number_users": number_users}), 200
+    except Exception as e:
+        db.close()
+        print("Error getting number of users:", e)
+        return jsonify({"message": "Failed to get number of users"}), 500
+
+
+@organization_bp.route("/get_organization_data/<organization_id>", methods=["GET"])
+def get_organization_data_by_id(organization_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    org = Organization(db)
+    auth = Auth(db)
+
+    if org.check_user_access(session["username"], organization_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    if auth.check_role(session["username"]) == False:
+        return jsonify({"message": "Permission denied"}), 403
+    try:
+        organization_data = org.get_organization_data(organization_id)
+        db.close()
+        if organization_data:
+            return jsonify(organization_data), 200
+        else:
+            return jsonify({"message": "Organization not found"}), 404
+    except Exception as e:
+        db.close()
+        print("Error getting organization data:", e)
+        return jsonify({"message": "Failed to get organization data"}), 500
