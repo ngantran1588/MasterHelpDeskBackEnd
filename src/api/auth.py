@@ -26,7 +26,7 @@ def login():
 
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
-    session.pop("username", None)
+    session.pop("username")
     return jsonify({"message": "Logout successful"}), 200
 
 
@@ -114,9 +114,11 @@ def change_password():
     new_password = data["new_password"]
 
     if session.get("verified_OTP") != True:
+        db.close()
         return jsonify({"message": "Verify OTP first"}), 403
 
     if session["username"] != username:
+        db.close()
         return jsonify({"message": "You don't have permission"}), 403 
     
     message, status = auth.change_password(username, new_password, old_password)

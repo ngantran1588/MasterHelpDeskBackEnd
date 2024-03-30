@@ -12,7 +12,7 @@ class Auth:
         
     def login(self, manager_username: str, manager_password: str) -> bool:
         # Retrieve user data from the database by email
-        manager_data = self.db.execute_query("SELECT managerId, managerPassword FROM tbl_manager WHERE managerUsername = %s", (manager_username,))
+        manager_data = self.db.execute_query("SELECT manager_id, manager_password FROM tbl_manager WHERE manager_username = %s", (manager_username,))
         
         if manager_data:
             # Extract user_id and stored_password from the retrieved data
@@ -25,7 +25,7 @@ class Auth:
         
     
     def change_password(self, manager_username, new_password, old_password):
-        query = "SELECT managerId, managerPassword from tbl_manager WHERE managerUsername = %s"
+        query = "SELECT manager_id, manager_password from tbl_manager WHERE manager_username = %s"
         value = (manager_username,)
 
         try:
@@ -37,7 +37,7 @@ class Auth:
             
             new_password = self.encrypt_password(new_password, manager_id)
 
-            query = "UPDATE tbl_manager SET password = %s WHERE managerUsername = %s"
+            query = "UPDATE tbl_manager SET password = %s WHERE manager_username = %s"
             values = (new_password, manager_username)
 
             self.db.execute_query(query, values)

@@ -14,6 +14,7 @@ def add_organization():
     auth = Auth(db)
     
     if session.get("username") == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
     
     data = request.get_json()
@@ -25,12 +26,15 @@ def add_organization():
     org_member = data["org_member"]
 
     if org.check_organization_slot(username) == False:
+        db.close()
         return jsonify({"message": "Failed to add organization"}), 500
 
     if auth.check_role(username) == False:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if org.check_organization_name_exist(name):
+        db.close()
         return jsonify({"message": "Organization name exists"}), 500
 
     success = org.add_organization(name, contact_phone, contact_email, description, username, org_member)
@@ -49,6 +53,7 @@ def get_organization():
     org = Organization(db)
 
     if session.get("username") == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     username = session["username"]
@@ -68,11 +73,13 @@ def get_organization_by_id(organization_id):
     org = Organization(db)
 
     if session.get("username") == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     username = session["username"]
 
     if org.check_user_access(username, organization_id) == False:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
    
     organization_data = org.get_organization_by_id(username, organization_id)
@@ -91,12 +98,14 @@ def change_organization_status():
     org = Organization(db)
 
     if session.get("username") == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     organization_id = request.json["organization_id"]
     status = request.json["status"]
 
     if org.check_user_access(session["username"], organization_id) == False:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
     
     success = org.change_organization_status(organization_id, status)
@@ -116,6 +125,7 @@ def update_organization_information():
     org = Organization(db)
 
     if session.get("username") == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     organization_id = request.json["organization_id"]
@@ -144,6 +154,7 @@ def add_user():
     org = Organization(db)
 
     if session.get("username") == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     organization_id = request.json["organization_id"]
@@ -169,6 +180,7 @@ def remove_user():
     org = Organization(db)
 
     if session.get("username") == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     organization_id = request.json["organization_id"]
@@ -194,6 +206,7 @@ def get_number_of_users(organization_id):
     org = Organization(db)
 
     if session.get("username") == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if org.check_user_access(session["username"], organization_id) == False:
@@ -218,6 +231,7 @@ def get_organization_data_by_id(organization_id):
     auth = Auth(db)
 
     if session.get("username") == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if org.check_user_access(session["username"], organization_id) == False:
@@ -225,6 +239,7 @@ def get_organization_data_by_id(organization_id):
         return jsonify({"message": "Permission denied"}), 403
     
     if auth.check_role(session["username"]) == False:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
     try:
         organization_data = org.get_organization_data(organization_id)
