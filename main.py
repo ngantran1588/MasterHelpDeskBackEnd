@@ -2,9 +2,9 @@ from dotenv import load_dotenv
 from flask import Flask
 from src.api.auth import auth_bp
 from src.api.organization import organization_bp
+from src.api.manager import manager_bp
 import secrets
 from flask_cors import CORS
-from cachelib.simple import SimpleCache
 
 load_dotenv()
 
@@ -17,6 +17,7 @@ def create_app():
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(organization_bp, url_prefix="/org")
+    app.register_blueprint(manager_bp, url_prefix="/manager")
 
     return app
 
