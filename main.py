@@ -3,6 +3,7 @@ from flask import Flask
 from src.api.auth import auth_bp
 from src.api.organization import organization_bp
 from src.api.manager import manager_bp
+from src.api.package import package_bp
 import secrets
 from flask_cors import CORS
 
@@ -18,6 +19,7 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(organization_bp, url_prefix="/org")
     app.register_blueprint(manager_bp, url_prefix="/manager")
+    app.register_blueprint(package_bp, url_prefix="/package")
 
     return app
 
