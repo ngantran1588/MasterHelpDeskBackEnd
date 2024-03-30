@@ -13,6 +13,9 @@ def add_organization():
     org = Organization(db)
     auth = Auth(db)
     
+    if session.get("username") == None:
+        return jsonify({"message": "Permission denied"}), 403
+    
     data = request.get_json()
     name = data["name"]
     contact_phone = data["contact_phone"]
@@ -45,6 +48,9 @@ def get_organization():
     db = connector.DBConnector(*db_env)
     org = Organization(db)
 
+    if session.get("username") == None:
+        return jsonify({"message": "Permission denied"}), 403
+
     username = session["username"]
     organization_data = org.get_all_organizations(username)
 
@@ -56,10 +62,13 @@ def get_organization():
         return jsonify({"message": "Organization not found"}), 404
 
 @organization_bp.route("/get/<organization_id>", methods=["GET"])
-def get_organization(organization_id):
+def get_organization_by_id(organization_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
+
+    if session.get("username") == None:
+        return jsonify({"message": "Permission denied"}), 403
 
     username = session["username"]
 
@@ -80,6 +89,9 @@ def change_organization_status():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
+
+    if session.get("username") == None:
+        return jsonify({"message": "Permission denied"}), 403
 
     organization_id = request.json["organization_id"]
     status = request.json["status"]
@@ -102,6 +114,9 @@ def update_organization_information():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
+
+    if session.get("username") == None:
+        return jsonify({"message": "Permission denied"}), 403
 
     organization_id = request.json["organization_id"]
     name = request.json["name"]
@@ -128,6 +143,9 @@ def add_user():
     db = connector.DBConnector(*db_env)
     org = Organization(db)
 
+    if session.get("username") == None:
+        return jsonify({"message": "Permission denied"}), 403
+
     organization_id = request.json["organization_id"]
     new_user = request.json["new_user"]
 
@@ -149,6 +167,9 @@ def remove_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
+
+    if session.get("username") == None:
+        return jsonify({"message": "Permission denied"}), 403
 
     organization_id = request.json["organization_id"]
     remove_username = request.json["remove_username"]
@@ -172,6 +193,9 @@ def get_number_of_users(organization_id):
     db = connector.DBConnector(*db_env)
     org = Organization(db)
 
+    if session.get("username") == None:
+        return jsonify({"message": "Permission denied"}), 403
+
     if org.check_user_access(session["username"], organization_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
@@ -192,6 +216,9 @@ def get_organization_data_by_id(organization_id):
     db = connector.DBConnector(*db_env)
     org = Organization(db)
     auth = Auth(db)
+
+    if session.get("username") == None:
+        return jsonify({"message": "Permission denied"}), 403
 
     if org.check_user_access(session["username"], organization_id) == False:
         db.close()

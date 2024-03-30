@@ -129,7 +129,7 @@ def change_password():
         return jsonify({"message": message}), 500
     
 @auth_bp.route("/change_role_to_superuser", methods=["POST"])
-def change_password():
+def change_role_to_superuser():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
@@ -145,7 +145,7 @@ def change_password():
         return jsonify({"message": message}), 500
     
 @auth_bp.route("/change_role_to_user", methods=["POST"])
-def change_password():
+def change_role_to_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
@@ -161,7 +161,7 @@ def change_password():
         return jsonify({"message": message}), 500
     
 @auth_bp.route("/change_role", methods=["POST"])
-def change_password():
+def change_role():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     auth = Auth(db)

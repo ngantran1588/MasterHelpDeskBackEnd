@@ -1,5 +1,5 @@
-import connector
 from ..const import const
+from . import connector
 
 class Organization:
     def __init__(self, db: connector.DBConnector) -> None:
@@ -15,8 +15,10 @@ class Organization:
 
         user_data = self.db.execute_query(query_user, value_user)
 
-        query_subcription = """SELECT subscription_id FROM tbl_billing WHERE customerId = %s"""
+        query_subcription = """SELECT subscription_id FROM tbl_subscription WHERE customer_id = %s"""
         value_subscription = (user_data[0])
+        
+        org_member.append(username)
 
         subscription_id = self.db.execute_query(query_subcription, value_subscription)
 
