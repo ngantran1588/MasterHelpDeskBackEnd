@@ -12,11 +12,11 @@ def login():
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
     data = request.get_json()
-    manager_username = data['managerUsername']
-    manager_password = data['managerPassword']
+    manager_username = data['manager_username']
+    manager_password = data['manager_password']
 
     if auth.login(manager_username, manager_password):
-        session['managerUsername'] = manager_username
+        session['manager_username'] = manager_username
         db.close()
         return jsonify({'message': 'Login successful'}), 200
     else:
@@ -26,6 +26,6 @@ def login():
 
 @manager_bp.route('/logout', methods=['POST'])
 def logout():
-    session.pop('managerUsername', None)
+    session.pop('manager_username', None)
     return jsonify({'message': 'Logout successful'}), 200
     
