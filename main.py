@@ -1,24 +1,23 @@
-from src.server_management.server_manager import ServerManager
-import os
 from dotenv import load_dotenv
 from flask import Flask
-from flask_session import Session
 from src.api.auth import auth_bp
-from src.models.auth import Auth
+from src.api.organization import organization_bp
+from src.api.manager import manager_bp
 import secrets
+from flask_cors import CORS
 
 load_dotenv()
 
 def create_app():
     app = Flask(__name__)
-    app.config['SESSION_TYPE'] = 'filesystem'
-    app.secret_key = secrets.token_hex(32)
-    
-    # Initialize session
-    Session(app)
+    CORS(app)
+    app.config["SESSION_TYPE"] = "filesystem"
+    app.secret_key = secrets.token_hex(32)  
 
     # Register blueprints
-    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(auth_bp, url_prefix="/auth")
+    app.register_blueprint(organization_bp, url_prefix="/org")
+    app.register_blueprint(manager_bp, url_prefix="/manager")
 
     return app
 
