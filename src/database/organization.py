@@ -1,13 +1,15 @@
 from ..const import const
 from . import connector
+from ..models.organization import Organization as Org
 
 class Organization:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
         self.db.connect()
+        self.org = Org()
 
     def add_organization(self, name: str, contact_phone: str, contact_email: str, description: str, username: str, org_member: list[str]) -> bool:
-        organization_id = self.generate_organization_id(name)
+        organization_id = self.org.generate_organization_id(name)
         organization_status = const.STATUS_ACTIVE
 
         query_user = """SELECT customer_id FROM tbl_customer WHERE username = %s"""
@@ -16,11 +18,12 @@ class Organization:
         user_data = self.db.execute_query(query_user, value_user)
 
         query_subcription = """SELECT subscription_id FROM tbl_subscription WHERE customer_id = %s"""
-        value_subscription = (user_data[0])
+        value_subscription = (str(user_data[0][0]),)
         
         org_member.append(username)
 
         subscription_id = self.db.execute_query(query_subcription, value_subscription)
+        
 
         if len(user_data) == 0:
             print("Error in querying user data")
@@ -30,10 +33,10 @@ class Organization:
             INSERT INTO tbl_organization (
                 organization_id, name, customer_id, organization_status,
                 subscription_id, description, contact_phone, contact_email, org_member
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
 
-        values = (organization_id, name, user_data[0], organization_status, subscription_id[0], description, contact_phone, contact_email, org_member)
+        values = (str(organization_id), name, str(user_data[0][0]), organization_status, str(subscription_id[0][0]), description, contact_phone, contact_email, org_member,)
 
         try:
             self.db.execute_query(query, values)
