@@ -9,7 +9,7 @@ class Customer:
                  role_id: list[str] = None,
                  status: str = None,
                  organization_id: str = None) -> None:
-        self.customer_id = auth.generate_user_id(username)
+        self.customer_id = auth.generate_id(username)
         self.username = username
         self.password = password
         self.full_name = full_name

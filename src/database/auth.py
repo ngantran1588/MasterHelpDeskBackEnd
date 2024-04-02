@@ -36,7 +36,7 @@ class Auth:
     
     def sign_up(self, username: str, password: str, full_name: str, email: str) -> bool:
         # Generate a unique user ID for the customer
-        customer_id = self.auth.generate_user_id(username)
+        customer_id = self.auth.generate_id(username)
 
         # Encrypt the password
         encrypted_password = self.auth.encrypt_password(password, customer_id)
