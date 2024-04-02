@@ -48,7 +48,7 @@ class Organization:
 
     def get_organization_by_id(self, username: str, organization_id: str) :
         query = """SELECT name, organization_status, description FROM tbl_organization WHERE organization_id = %s AND %s = ANY(org_member)"""
-        values = (organization_id, username)
+        values = (organization_id, username,)
 
         try:
             result = self.db.execute_query(query, values)
@@ -61,7 +61,7 @@ class Organization:
 
     def get_all_organizations(self, username: str):
         query = """SELECT name, organization_status, description FROM tbl_organization WHERE %s = ANY(org_member)"""
-        values = (username)
+        values = (username,)
 
         try:
             result = self.db.execute_query(query, values)
@@ -74,7 +74,7 @@ class Organization:
 
     def check_user_access(self, username: str, organization_id: str) -> bool:
         query = """ SELECT COUNT(*) FROM tbl_organization WHERE organization_id = %s AND  %s = ANY(org_member) """
-        values = (organization_id, username)
+        values = (organization_id, username,)
         try:
             result = self.db.execute_query(query, values)
             access_granted = result[0][0] > 0
@@ -99,7 +99,7 @@ class Organization:
 
     def update_information(self, name: str, contact_phone: str, contact_email: str, description: str, organization_id: str) -> bool:
         query = """ UPDATE tbl_organization SET name = %s, contact_phone = %s, contact_email = %s, description = %s WHERE organization_id = %s"""
-        values = (name, contact_phone, contact_email, description, organization_id)
+        values = (name, contact_phone, contact_email, description, organization_id,)
         try:
             self.db.execute_query(query, values)
             print("Organization information updated successfully!")
@@ -110,7 +110,7 @@ class Organization:
 
     def add_user(self, organization_id: str, new_user: list[str]) -> bool:
         query = """ UPDATE tbl_organization SET org_member = array_append(org_member, %s) WHERE organization_id = %s"""
-        values = (new_user, organization_id)
+        values = (new_user, organization_id,)
         try:
             self.db.execute_query(query, values)
             print("User added to organization successfully!")
@@ -121,7 +121,7 @@ class Organization:
 
     def remove_user(self, organization_id: str, remove_username: str) -> bool:
         query = """UPDATE tbl_organization SET org_member = array_remove(org_member, %s) WHERE organization_id = %s"""
-        values = (remove_username, organization_id)
+        values = (remove_username, organization_id,)
         try:
             self.db.execute_query(query, values)
             print("User removed from organization successfully!")
@@ -179,7 +179,7 @@ class Organization:
 
     def get_organization_data(self, organization_id: str):
         query = """SELECT * FROM tbl_organization WHERE organization_id = %s"""
-        values = (organization_id)
+        values = (organization_id,)
 
         try:
             result = self.db.execute_query(query, values)
