@@ -11,8 +11,9 @@ load_dotenv()
 
 def create_app():
     app = Flask(__name__)
-    CORS(app)
+    CORS(app, supports_credentials=True)
     app.config["SESSION_TYPE"] = "filesystem"
+    app.config["SESSION_COOKIE_SECURE"] = True
     app.secret_key = secrets.token_hex(32)  
 
     # Register blueprints

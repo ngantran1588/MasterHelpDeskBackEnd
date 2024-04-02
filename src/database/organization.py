@@ -1,15 +1,17 @@
 from ..const import const
 from . import connector
 from ..models.organization import Organization as Org
+from ..models.auth import Auth 
 
 class Organization:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
         self.db.connect()
         self.org = Org()
+        self.auth = Auth()
 
     def add_organization(self, name: str, contact_phone: str, contact_email: str, description: str, username: str, org_member: list[str]) -> bool:
-        organization_id = self.org.generate_organization_id(name)
+        organization_id = self.auth.generate_id(name)
         organization_status = const.STATUS_ACTIVE
 
         query_user = """SELECT customer_id FROM tbl_customer WHERE username = %s"""
