@@ -1,4 +1,4 @@
-from .auth import Auth as auth
+from .auth import Auth
 
 class Organization:
     def __init__(self,
@@ -10,6 +10,7 @@ class Organization:
              contact_phone: str = None,
              contact_email: str = None,
              org_member: list[str] = None) -> None:
+        auth = Auth()
         self.organization_id = auth.generate_id(name)
         self.name = name
         self.customer_id = customer_id

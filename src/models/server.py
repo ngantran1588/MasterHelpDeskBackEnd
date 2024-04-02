@@ -1,4 +1,4 @@
-from auth import Auth as auth
+from .auth import Auth
 
 class Server:
     def __init__(self,
@@ -10,6 +10,7 @@ class Server:
                  rsa_key: str = None,
                  rsa_key_time: str = None,
                  status: str = None) -> None:
+        auth = Auth()
         self.server_id = auth.generate_id(server_name)
         self.server_name = server_name
         self.host = host
