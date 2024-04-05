@@ -279,3 +279,37 @@ def get_organization_data_by_id(organization_id):
         db.close()
         print("Error getting organization data:", e)
         return jsonify({"message": "Failed to get organization data"}), 500
+
+@organization_bp.route("/delete", methods=["DELETE"])
+@token_required
+def delete_organization():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    org = Organization(db)
+
+    username = request.jwt_payload.get("username")
+
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    organization_id = request.json.get("organization_id")
+
+    if organization_id is None:
+        db.close()
+        return jsonify({"message": "Organization ID is missing"}), 400
+
+    # Check if the user has access to delete the organization
+    if not org.check_user_access(username, organization_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    # Attempt to delete the organization
+    success = org.delete_organization(organization_id)
+
+    db.close()
+
+    if success:
+        return jsonify({"message": "Organization deleted successfully"}), 200
+    else:
+        return jsonify({"message": "Failed to delete organization"}), 500

@@ -57,7 +57,14 @@ class Organization:
             print("Query organization successful!")
             if len(result) == 0:
                 return None
-            return result
+            organization_info = result[0]
+            organization = {
+                "name": organization_info["name"],
+                "organization_status": organization_info["organization_status"],
+                "description": organization_info["description"]
+            }
+               
+            return organization
         except Exception as e:
             print("Error querying organization:", e)
 
@@ -70,7 +77,16 @@ class Organization:
             print("Query organization successful!")
             if len(result) == 0:
                 return None
-            return result
+            organizations = []
+            for org_info in result:
+                organization = {
+                    "name": org_info["name"],
+                    "organization_status": org_info["organization_status"],
+                    "description": org_info["description"]
+                }
+                organizations.append(organization)
+
+            return organizations
         except Exception as e:
             print("Error querying organization:", e)
 
@@ -188,7 +204,31 @@ class Organization:
             print("Query organization successful!")
             if len(result) == 0:
                 return None
-            return result
+            organizations = []
+            for org_info in result:
+                # Extract organization information and create a dictionary
+                organization = {
+                    "name": org_info["name"],
+                    "customer_id": org_info["customer_id"],
+                    "organization_status": org_info["organization_status"],
+                    "subscription_id": org_info["subscription_id"],
+                    "description": org_info["description"],
+                    "contact_phone": org_info["contact_phone"],
+                    "contact_email": org_info["contact_email"],
+                    "org_member": org_info["org_member"]
+                }
+                organizations.append(organization)
+
+            return organizations
         except Exception as e:
             print("Error querying organization:", e)
-    
+
+    def delete_organization(self, organization_id: str) -> bool:
+        query = """DELETE FROM tbl_organization WHERE organization_id = %s"""
+        try:
+            self.db.execute_query(query, (organization_id,))
+            print("Organization deleted successfully!")
+            return True
+        except Exception as e:
+            print("Error deleting organization:", e)
+            return False

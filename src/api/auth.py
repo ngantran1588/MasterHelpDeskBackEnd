@@ -141,6 +141,35 @@ def change_password():
     else:
         return response, 500
     
+@auth_bp.route("/reset_password", methods=["POST"])
+@token_required
+def reset_password():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    auth = Auth(db)
+    data = request.get_json()
+    username = data["username"]
+    new_password = data["new_password"]
+
+    otp_verified = request.jwt_payload.get("otp_verified")
+    if otp_verified != True:
+        db.close()
+        return jsonify({"message": "Verify OTP first"}), 403
+    username_token = request.jwt_payload.get("username")
+    if username != username_token:
+        db.close()
+        return jsonify({"message": "You don't have permission"}), 403 
+    
+    message, status = auth.reset_password(username, new_password)
+
+    response = jsonify({"message": message})
+    response.delete_cookie("otp_verified")  # Remove token cookie
+    
+    db.close()
+    if status:
+        return response, 200
+    else:
+        return response, 500
 @auth_bp.route("/change_role_to_superuser", methods=["POST"])
 @token_required
 def change_role_to_superuser():

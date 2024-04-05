@@ -205,6 +205,25 @@ class Auth:
         except Exception as e:
             print("Error changing password:", e)
 
+    # Reset password
+    def reset_password(self, username, new_password):
+        query = "SELECT customer_id, password from tbl_customer WHERE username = %s"
+        value = (username,)
+
+        try:
+            result = self.db.execute_query(query, value)
+            user_id, stored_password = result[0]
+            
+            new_password = self.encrypt_password(new_password, user_id)
+
+            query = "UPDATE tbl_customer SET password = %s WHERE username = %s"
+            values = (new_password, username)
+
+            self.db.execute_query(query, values)
+            return "Update password successfully", True
+        except Exception as e:
+            print("Error reset password:", e)
+
     # Get username from email
     def get_username_from_email(self, email: str) -> str:
         query = "SELECT username from tbl_customer WHERE email = %s"
