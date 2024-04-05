@@ -12,13 +12,15 @@ load_dotenv()
 organization_bp = Blueprint("organization", __name__)
 
 @organization_bp.route("/add", methods=["POST"])
+@token_required
 def add_organization():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
     auth = Auth(db)
-    
-    if session["username"] == None:
+
+    username = request.jwt_payload.get("username")
+    if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -27,7 +29,6 @@ def add_organization():
     contact_phone = data["contact_phone"]
     contact_email = data["contact_email"]
     description = data["description"]
-    username = session["username"]
     org_member = data["org_member"]
 
     if org.check_organization_slot(username) == False:
@@ -74,16 +75,17 @@ def get_organization():
         return jsonify({"message": "Organization not found"}), 404
 
 @organization_bp.route("/get/<organization_id>", methods=["GET"])
+@token_required
 def get_organization_by_id(organization_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
 
-    if session.get("username") == None:
+    username = request.jwt_payload.get("username")
+
+    if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-
-    username = session["username"]
 
     if org.check_user_access(username, organization_id) == False:
         db.close()
@@ -99,19 +101,22 @@ def get_organization_by_id(organization_id):
         return jsonify({"message": "Organization not found"}), 404
     
 @organization_bp.route("/change_organization_status", methods=["PUT"])
+@token_required
 def change_organization_status():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
 
-    if session.get("username") == None:
+    username = request.jwt_payload.get("username")
+
+    if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     organization_id = request.json["organization_id"]
     status = request.json["status"]
 
-    if org.check_user_access(session["username"], organization_id) == False:
+    if org.check_user_access(username, organization_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -126,12 +131,15 @@ def change_organization_status():
     
 
 @organization_bp.route("/update_information", methods=["PUT"])
+@token_required
 def update_organization_information():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
 
-    if session.get("username") == None:
+    username = request.jwt_payload.get("username")
+
+    if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
@@ -141,7 +149,7 @@ def update_organization_information():
     contact_email = request.json["contact_email"]
     description = request.json["description"]
 
-    if org.check_user_access(session["username"], organization_id) == False:
+    if org.check_user_access(username, organization_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -155,19 +163,22 @@ def update_organization_information():
         return jsonify({"message": "Failed to update organization information"}), 500
 
 @organization_bp.route("/add_user", methods=["PUT"])
+@token_required
 def add_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
 
-    if session.get("username") == None:
+    username = request.jwt_payload.get("username")
+
+    if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     organization_id = request.json["organization_id"]
     new_user = request.json["new_user"]
 
-    if org.check_user_access(session["username"], organization_id) == False:
+    if org.check_user_access(username, organization_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -181,19 +192,22 @@ def add_user():
         return jsonify({"message": "Error adding user to organization:"}), 500
 
 @organization_bp.route("/remove_user", methods=["PUT"])
+@token_required
 def remove_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
 
-    if session.get("username") == None:
+    username = request.jwt_payload.get("username")
+
+    if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     organization_id = request.json["organization_id"]
     remove_username = request.json["remove_username"]
 
-    if org.check_user_access(session["username"], organization_id) == False:
+    if org.check_user_access(username, organization_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -207,16 +221,19 @@ def remove_user():
         return jsonify({"message": "Failed to remove user from organization"}), 500
 
 @organization_bp.route("/get_number_of_users/<organization_id>", methods=["GET"])
+@token_required
 def get_number_of_users(organization_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
 
-    if session.get("username") == None:
+    username = request.jwt_payload.get("username")
+
+    if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
-    if org.check_user_access(session["username"], organization_id) == False:
+    if org.check_user_access(username, organization_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -231,21 +248,24 @@ def get_number_of_users(organization_id):
 
 
 @organization_bp.route("/get_organization_data/<organization_id>", methods=["GET"])
+@token_required
 def get_organization_data_by_id(organization_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
     auth = Auth(db)
 
-    if session.get("username") == None:
+    username = request.jwt_payload.get("username")
+
+    if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
-    if org.check_user_access(session["username"], organization_id) == False:
+    if org.check_user_access(username, organization_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    if auth.check_role(session["username"]) == False:
+    if auth.check_role(username) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     try:
