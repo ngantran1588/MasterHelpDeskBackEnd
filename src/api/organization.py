@@ -1,19 +1,25 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, current_app
 from ..database import connector
 from ..database.organization import Organization 
 from ..database.load_env import LoadDBEnv
 from ..database.auth import Auth
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 organization_bp = Blueprint("organization", __name__)
 
 @organization_bp.route("/add", methods=["POST"])
+@jwt_required()
 def add_organization():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
     auth = Auth(db)
+
+    jwt = current_app.config["jwt"]
+
+    username = get_jwt_identity()
     
-    if session.get("username") == None:
+    if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     

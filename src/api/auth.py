@@ -1,8 +1,8 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, current_app
 from ..database import connector
 from ..database.auth import Auth
 from ..database.load_env import LoadDBEnv
-
+from flask_jwt_extended import create_access_token
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -15,10 +15,13 @@ def login():
     username = data["username"]
     password = data["password"]
 
+    jwt = current_app.config["jwt"]
+
     if auth.login(username, password):
-        session["username"] = username
+        # session["username"] = username
+        access_token = create_access_token(identity=username)
         db.close()
-        return jsonify({"message": "Login successful"}), 200
+        return jsonify({"message": "Login successful", "access_token":access_token}), 200
     else:
         db.close()
         return jsonify({"message": "Invalid credentials"}), 401
