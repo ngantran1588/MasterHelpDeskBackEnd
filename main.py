@@ -18,10 +18,8 @@ from flask_cors import CORS
 def create_app():
     app = Flask(__name__)
     CORS(app, supports_credentials=True)
-    # app.config["SESSION_TYPE"] = "filesystem"
-    # app.config["SESSION_COOKIE_SECURE"] = True
-    # app.secret_key = secrets.token_hex(32)  
-    app.config["JWT_SECRET_KEY"] = secrets.token_hex(32)
+    app.config["SESSION_TYPE"] = "filesystem"
+    app.secret_key = secrets.token_hex(32)  
 
     jwt = JWTManager(app)
 
