@@ -3,23 +3,22 @@ from ..database import connector
 from ..database.organization import Organization 
 from ..database.load_env import LoadDBEnv
 from ..database.auth import Auth
-from flask_jwt_extended import jwt_required, get_jwt_identity
+import os
+from dotenv import load_dotenv
+from ..decorators import token_required
+
+load_dotenv()
 
 organization_bp = Blueprint("organization", __name__)
 
 @organization_bp.route("/add", methods=["POST"])
-@jwt_required()
 def add_organization():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
     auth = Auth(db)
-
-    jwt = current_app.config["jwt"]
-
-    username = get_jwt_identity()
     
-    if username == None:
+    if session["username"] == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -53,16 +52,18 @@ def add_organization():
         return jsonify({"message": "Failed to add organization"}), 500
 
 @organization_bp.route("/get", methods=["GET"])
+@token_required
 def get_organization():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
 
-    if session.get("username") == None:
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
-    username = session["username"]
     organization_data = org.get_all_organizations(username)
 
     db.close()

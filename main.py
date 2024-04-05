@@ -6,8 +6,7 @@
 # from src.api.package import package_bp
 # import secrets
 # from flask_cors import CORS
-from flask import Blueprint, jsonify, request, Flask
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask import Flask
 from src.api.auth import auth_bp
 from src.api.organization import organization_bp
 from src.api.manager import manager_bp
@@ -19,17 +18,14 @@ def create_app():
     app = Flask(__name__)
     CORS(app, supports_credentials=True)
     app.config["SESSION_TYPE"] = "filesystem"
+    app.config["SESSION_SECURE_COOKIE"] = True
     app.secret_key = secrets.token_hex(32)  
-
-    jwt = JWTManager(app)
 
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(organization_bp, url_prefix="/org")
     app.register_blueprint(manager_bp, url_prefix="/manager")
     app.register_blueprint(package_bp, url_prefix="/package")
-
-    app.config["jwt"] = jwt
 
     return app
 
