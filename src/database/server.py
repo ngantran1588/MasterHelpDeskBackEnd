@@ -246,7 +246,7 @@ class Server:
             return False
         
     def get_server_in_organization(self, organization_id: str):
-        query = "SELECT server_id, server_name, status FROM tbl_server WHERE organization_id = %s"
+        query = "SELECT server_id, server_name, status, domain FROM tbl_server WHERE organization_id = %s"
         values = (organization_id,)
         try:
             result = self.db.execute_query(query, values)
@@ -255,7 +255,8 @@ class Server:
                 server = {
                     "server_id": server_info[0],
                     "server_name": server_info[1],
-                    "status": server_info[2]
+                    "status": server_info[2],
+                    "domain": server_info[3]
                 }
                 servers.append(server)
             return servers
