@@ -197,7 +197,7 @@ class Organization:
             return False
 
     def get_organization_data(self, organization_id: str):
-        query = """SELECT * FROM tbl_organization WHERE organization_id = %s"""
+        query = """SELECT name,customer_id,organization_status,subscription_id,description,contact_phone,contact_email,org_member FROM tbl_organization WHERE organization_id = %s"""
         values = (organization_id,)
 
         try:

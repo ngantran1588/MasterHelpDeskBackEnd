@@ -39,6 +39,11 @@ def add_organization():
         db.close()
         return jsonify({"message": "Organization name exists"}), 500
 
+    for member in org_member:
+        if not auth.exist_username(member):
+            db.close()
+            return jsonify({"message": "User does not exist"}), 500
+
     success = org.add_organization(name, contact_phone, contact_email, description, username, org_member)
 
     db.close()
