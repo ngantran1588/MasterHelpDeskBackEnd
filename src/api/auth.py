@@ -18,8 +18,11 @@ def login():
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
     data = request.get_json()
-    username = data["username"]
-    password = data["password"]
+    username = data.get("username")
+    password = data.get("password")
+
+    if not all([username, password]) or username == '' or password == '':
+        return jsonify({"message": "Missing required fields"}), 400
    
     if auth.login(username, password):
         payload = {"username": username, "exp": datetime.now(timezone.utc) + timedelta(minutes=10)}

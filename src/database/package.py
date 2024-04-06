@@ -8,14 +8,14 @@ class Package:
     def format_package_data(self, package_info):
         # Convert package information to key-value format
         return {
-            "package_id": package_info["package_id"],
-            "package_name": package_info["package_name"],
-            "duration": package_info["duration"],
-            "description": package_info["description"],
-            "slot_number": package_info["slot_number"],
-            "slot_server": package_info["slot_server"],
-            "price": package_info["price"],
-            "status": package_info["status"]
+            "package_id": package_info[0],
+            "package_name": package_info[1],
+            "duration": package_info[2],
+            "description": package_info[3],
+            "slot_number": package_info[4],
+            "slot_server": package_info[5],
+            "price": package_info[6],
+            "status": package_info[7]
         }
 
     def get_packages(self):

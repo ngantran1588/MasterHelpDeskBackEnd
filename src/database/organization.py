@@ -59,9 +59,9 @@ class Organization:
                 return None
             organization_info = result[0]
             organization = {
-                "name": organization_info["name"],
-                "organization_status": organization_info["organization_status"],
-                "description": organization_info["description"]
+                "name": organization_info[0],
+                "organization_status": organization_info[1],
+                "description": organization_info[2]
             }
                
             return organization
@@ -80,9 +80,9 @@ class Organization:
             organizations = []
             for org_info in result:
                 organization = {
-                    "name": org_info["name"],
-                    "organization_status": org_info["organization_status"],
-                    "description": org_info["description"]
+                    "name": org_info[0],
+                    "organization_status": org_info[1],
+                    "description": org_info[2]
                 }
                 organizations.append(organization)
 
@@ -208,14 +208,14 @@ class Organization:
             for org_info in result:
                 # Extract organization information and create a dictionary
                 organization = {
-                    "name": org_info["name"],
-                    "customer_id": org_info["customer_id"],
-                    "organization_status": org_info["organization_status"],
-                    "subscription_id": org_info["subscription_id"],
-                    "description": org_info["description"],
-                    "contact_phone": org_info["contact_phone"],
-                    "contact_email": org_info["contact_email"],
-                    "org_member": org_info["org_member"]
+                    "name": org_info[0],
+                    "customer_id": org_info[1],
+                    "organization_status": org_info[2],
+                    "subscription_id": org_info[3],
+                    "description": org_info[4],
+                    "contact_phone": org_info[5],
+                    "contact_email": org_info[6],
+                    "org_member": org_info[7]
                 }
                 organizations.append(organization)
 

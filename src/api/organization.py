@@ -1,13 +1,9 @@
-from flask import Blueprint, request, jsonify, session, current_app
+from flask import Blueprint, request, jsonify
 from ..database import connector
 from ..database.organization import Organization 
 from ..database.load_env import LoadDBEnv
 from ..database.auth import Auth
-import os
-from dotenv import load_dotenv
 from ..decorators import token_required
-
-load_dotenv()
 
 organization_bp = Blueprint("organization", __name__)
 
