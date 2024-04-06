@@ -281,9 +281,9 @@ def get_organization_data_by_id(organization_id):
         print("Error getting organization data:", e)
         return jsonify({"message": "Failed to get organization data"}), 500
 
-@organization_bp.route("/delete", methods=["DELETE"])
+@organization_bp.route("/delete/<organization_id>", methods=["DELETE"])
 @token_required
-def delete_organization():
+def delete_organization(organization_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
@@ -293,8 +293,6 @@ def delete_organization():
     if username is None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-
-    organization_id = request.json.get("organization_id")
 
     if organization_id is None:
         db.close()
@@ -314,3 +312,32 @@ def delete_organization():
         return jsonify({"message": "Organization deleted successfully"}), 200
     else:
         return jsonify({"message": "Failed to delete organization"}), 500
+
+@organization_bp.route("/get_user_in_organization/<organization_id>", methods=["GET"])
+@token_required
+def get_user_in_organization(organization_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    org = Organization(db)
+    auth = Auth(db)
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    if organization_id is None:
+        db.close()
+        return jsonify({"message": "Organization ID is required"}), 400
+    
+    if auth.check_role(username) is False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    users_and_roles = org.get_user_organization(organization_id)
+    db.close()
+
+    if users_and_roles is not None:
+        return jsonify(users_and_roles), 200
+    else:
+        return jsonify({"message": "Failed to get users and roles"}), 500

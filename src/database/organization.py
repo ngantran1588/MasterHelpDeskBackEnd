@@ -233,3 +233,41 @@ class Organization:
         except Exception as e:
             print("Error deleting organization:", e)
             return False
+
+    def get_user_organization(self, organization_id: str):
+        query = """SELECT org_member FROM tbl_organization WHERE organization_id = %s"""
+        values = (organization_id,)
+
+        try:
+            result = self.db.execute_query(query, values)
+            print("Query organization successful!")
+            if len(result) == 0:
+                return None
+            
+            user_roles = []
+            for org_info in result:
+                org_members = org_info[0]  # Assuming org_member is a list of usernames
+                for username in org_members:
+                    roles = self.get_user_roles(username)
+                    user_roles.append({"username": username, "roles": roles})
+
+            return user_roles
+        except Exception as e:
+            print("Error getting user organization:", e)
+
+    def get_user_roles(self, username: str):
+        query = """
+            SELECT r.role_name 
+            FROM tbl_customer c 
+            JOIN tbl_role r ON c.role_id = r.role_id 
+            WHERE c.username = %s
+        """
+        values = (username,)
+
+        try:
+            result = self.db.execute_query(query, values)
+            if len(result) == 0:
+                return None
+            return [role[0] for role in result]
+        except Exception as e:
+            print("Error getting user roles:", e)
