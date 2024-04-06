@@ -69,7 +69,7 @@ class Organization:
             print("Error querying organization:", e)
 
     def get_all_organizations(self, username: str):
-        query = """SELECT name, organization_status, description FROM tbl_organization WHERE %s = ANY(org_member)"""
+        query = """SELECT organization_id, name, organization_status, description FROM tbl_organization WHERE %s = ANY(org_member)"""
         values = (username,)
 
         try:
@@ -80,9 +80,10 @@ class Organization:
             organizations = []
             for org_info in result:
                 organization = {
-                    "name": org_info[0],
-                    "organization_status": org_info[1],
-                    "description": org_info[2]
+                    "organization_id": org_info[0],
+                    "name": org_info[1],
+                    "organization_status": org_info[2],
+                    "description": org_info[3]
                 }
                 organizations.append(organization)
 
@@ -179,7 +180,7 @@ class Organization:
             query_count_org = "SELECT COUNT(*) FROM tbl_organization WHERE customer_id = %s"
             values_count_org = (customer_id,)
             current_slot = self.db.execute_query(query_count_org, values_count_org)[0][0]
-            
+
             return current_slot < total_slot
         except Exception as e:
             print("Error checking organization slot:", e)
