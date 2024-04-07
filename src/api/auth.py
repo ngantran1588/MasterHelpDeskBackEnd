@@ -1,8 +1,14 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify
 from ..database import connector
 from ..database.auth import Auth
 from ..database.load_env import LoadDBEnv
+from datetime import datetime, timedelta, timezone
+import jwt
+import os
+from dotenv import load_dotenv
+from ..decorators import token_required
 
+load_dotenv()
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -12,13 +18,17 @@ def login():
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
     data = request.get_json()
-    username = data["username"]
-    password = data["password"]
+    username = data.get("username")
+    password = data.get("password")
 
+    if not all([username, password]) or username == '' or password == '':
+        return jsonify({"message": "Missing required fields"}), 400
+   
     if auth.login(username, password):
-        session["username"] = username
+        payload = {"username": username, "exp": datetime.now(timezone.utc) + timedelta(minutes=10)}
+        token = jwt.encode(payload, os.environ.get("JWT_SECRET_KEY"), algorithm="HS256")
         db.close()
-        return jsonify({"message": "Login successful"}), 200
+        return jsonify({"message": "Login successful", "access_token": token}), 200
     else:
         db.close()
         return jsonify({"message": "Invalid credentials"}), 401
@@ -26,9 +36,9 @@ def login():
 
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
-    session.pop("username")
-    return jsonify({"message": "Logout successful"}), 200
-
+    response = jsonify({"message": "Logout successful"})
+    response.delete_cookie("access_token")
+    return response, 200
 
 @auth_bp.route("/signup", methods=["POST"])
 def sign_up():
@@ -42,7 +52,6 @@ def sign_up():
     email = data["email"]
 
     if auth.sign_up(username, password, full_name, email):
-        session["username"] = username
         db.close()
         return jsonify({"message": "Sign-up successful"}), 201
     else:
@@ -84,6 +93,7 @@ def resend_otp():
     
 
 @auth_bp.route("/verify_otp", methods=["POST"])
+@token_required
 def verify_otp():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
@@ -93,17 +103,18 @@ def verify_otp():
     otp = data["otp"]
 
     if auth.verify_otp(email, otp):
-        session["username"] = auth.get_username_from_email(email)
-        session["verified_OTP"] = True
+        payload = {"otp_verified": True, "exp": datetime.now() + timedelta(minutes=10)}
+        token = jwt.encode(payload, os.environ.get("JWT_SECRET_KEY"), algorithm="HS256")
         auth.delete_used_otp(email, otp)
         db.close()
-        return jsonify({"message": "OTP verified successfully"}), 200
+        return jsonify({"message": "OTP verified successfully", "otp_verified": token}), 200
     else:
         auth.delete_expired_otp()
         db.close()
         return jsonify({"message": "OTP verification failed"}), 500
     
 @auth_bp.route("/change_password", methods=["POST"])
+@token_required
 def change_password():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
@@ -113,29 +124,62 @@ def change_password():
     old_password = data["old_password"]
     new_password = data["new_password"]
 
-    if session.get("verified_OTP") != True:
+    otp_verified = request.jwt_payload.get("otp_verified")
+    if otp_verified != True:
         db.close()
         return jsonify({"message": "Verify OTP first"}), 403
-
-    if session["username"] != username:
+    username_token = request.jwt_payload.get("username")
+    if username != username_token:
         db.close()
         return jsonify({"message": "You don't have permission"}), 403 
     
     message, status = auth.change_password(username, new_password, old_password)
 
-    session["verified_OTP"] = None
+    response = jsonify({"message": message})
+    response.delete_cookie("otp_verified")  # Remove token cookie
+    
     db.close()
     if status:
-        return jsonify({"message": message}), 200
+        return response, 200
     else:
-        return jsonify({"message": message}), 500
+        return response, 500
     
+@auth_bp.route("/reset_password", methods=["POST"])
+@token_required
+def reset_password():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    auth = Auth(db)
+    data = request.get_json()
+    username = data["username"]
+    new_password = data["new_password"]
+
+    otp_verified = request.jwt_payload.get("otp_verified")
+    if otp_verified != True:
+        db.close()
+        return jsonify({"message": "Verify OTP first"}), 403
+    username_token = request.jwt_payload.get("username")
+    if username != username_token:
+        db.close()
+        return jsonify({"message": "You don't have permission"}), 403 
+    
+    message, status = auth.reset_password(username, new_password)
+
+    response = jsonify({"message": message})
+    response.delete_cookie("otp_verified")  # Remove token cookie
+    
+    db.close()
+    if status:
+        return response, 200
+    else:
+        return response, 500
 @auth_bp.route("/change_role_to_superuser", methods=["POST"])
+@token_required
 def change_role_to_superuser():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
-    username = session["username"]
+    username = request.jwt_payload.get("username")
     
     message, status = auth.change_role_to_superuser(username)
 
@@ -147,11 +191,12 @@ def change_role_to_superuser():
         return jsonify({"message": message}), 500
     
 @auth_bp.route("/change_role_to_user", methods=["POST"])
+@token_required
 def change_role_to_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
-    username = session["username"]
+    username = request.jwt_payload.get("username")
     
     message, status = auth.change_role_to_user(username)
 
@@ -163,12 +208,13 @@ def change_role_to_user():
         return jsonify({"message": message}), 500
     
 @auth_bp.route("/change_role", methods=["POST"])
+@token_required
 def change_role():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
     data = request.get_json()
-    username = session["username"]
+    username = request.jwt_payload.get("username")
     role_id = data["role_id"]
 
     message, status = auth.change_role(username, role_id)

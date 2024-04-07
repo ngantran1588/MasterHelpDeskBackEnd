@@ -1,15 +1,17 @@
 from ..const import const
 from . import connector
 from ..models.organization import Organization as Org
+from ..models.auth import Auth 
 
 class Organization:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
         self.db.connect()
         self.org = Org()
+        self.auth = Auth()
 
     def add_organization(self, name: str, contact_phone: str, contact_email: str, description: str, username: str, org_member: list[str]) -> bool:
-        organization_id = self.org.generate_organization_id(name)
+        organization_id = self.auth.generate_id(name)
         organization_status = const.STATUS_ACTIVE
 
         query_user = """SELECT customer_id FROM tbl_customer WHERE username = %s"""
@@ -48,33 +50,50 @@ class Organization:
 
     def get_organization_by_id(self, username: str, organization_id: str) :
         query = """SELECT name, organization_status, description FROM tbl_organization WHERE organization_id = %s AND %s = ANY(org_member)"""
-        values = (organization_id, username)
+        values = (organization_id, username,)
 
         try:
             result = self.db.execute_query(query, values)
             print("Query organization successful!")
             if len(result) == 0:
                 return None
-            return result
+            organization_info = result[0]
+            organization = {
+                "name": organization_info[0],
+                "organization_status": organization_info[1],
+                "description": organization_info[2]
+            }
+               
+            return organization
         except Exception as e:
             print("Error querying organization:", e)
 
     def get_all_organizations(self, username: str):
-        query = """SELECT name, organization_status, description FROM tbl_organization WHERE %s = ANY(org_member)"""
-        values = (username)
+        query = """SELECT organization_id, name, organization_status, description FROM tbl_organization WHERE %s = ANY(org_member)"""
+        values = (username,)
 
         try:
             result = self.db.execute_query(query, values)
             print("Query organization successful!")
             if len(result) == 0:
                 return None
-            return result
+            organizations = []
+            for org_info in result:
+                organization = {
+                    "organization_id": org_info[0],
+                    "name": org_info[1],
+                    "organization_status": org_info[2],
+                    "description": org_info[3]
+                }
+                organizations.append(organization)
+
+            return organizations
         except Exception as e:
             print("Error querying organization:", e)
 
     def check_user_access(self, username: str, organization_id: str) -> bool:
         query = """ SELECT COUNT(*) FROM tbl_organization WHERE organization_id = %s AND  %s = ANY(org_member) """
-        values = (organization_id, username)
+        values = (organization_id, username,)
         try:
             result = self.db.execute_query(query, values)
             access_granted = result[0][0] > 0
@@ -99,7 +118,7 @@ class Organization:
 
     def update_information(self, name: str, contact_phone: str, contact_email: str, description: str, organization_id: str) -> bool:
         query = """ UPDATE tbl_organization SET name = %s, contact_phone = %s, contact_email = %s, description = %s WHERE organization_id = %s"""
-        values = (name, contact_phone, contact_email, description, organization_id)
+        values = (name, contact_phone, contact_email, description, organization_id,)
         try:
             self.db.execute_query(query, values)
             print("Organization information updated successfully!")
@@ -110,7 +129,7 @@ class Organization:
 
     def add_user(self, organization_id: str, new_user: list[str]) -> bool:
         query = """ UPDATE tbl_organization SET org_member = array_append(org_member, %s) WHERE organization_id = %s"""
-        values = (new_user, organization_id)
+        values = (new_user, organization_id,)
         try:
             self.db.execute_query(query, values)
             print("User added to organization successfully!")
@@ -121,7 +140,7 @@ class Organization:
 
     def remove_user(self, organization_id: str, remove_username: str) -> bool:
         query = """UPDATE tbl_organization SET org_member = array_remove(org_member, %s) WHERE organization_id = %s"""
-        values = (remove_username, organization_id)
+        values = (remove_username, organization_id,)
         try:
             self.db.execute_query(query, values)
             print("User removed from organization successfully!")
@@ -178,15 +197,77 @@ class Organization:
             return False
 
     def get_organization_data(self, organization_id: str):
-        query = """SELECT * FROM tbl_organization WHERE organization_id = %s"""
-        values = (organization_id)
+        query = """SELECT name,customer_id,organization_status,subscription_id,description,contact_phone,contact_email,org_member FROM tbl_organization WHERE organization_id = %s"""
+        values = (organization_id,)
 
         try:
             result = self.db.execute_query(query, values)
             print("Query organization successful!")
             if len(result) == 0:
                 return None
-            return result
+            organizations = []
+            for org_info in result:
+                # Extract organization information and create a dictionary
+                organization = {
+                    "name": org_info[0],
+                    "customer_id": org_info[1],
+                    "organization_status": org_info[2],
+                    "subscription_id": org_info[3],
+                    "description": org_info[4],
+                    "contact_phone": org_info[5],
+                    "contact_email": org_info[6],
+                    "org_member": org_info[7]
+                }
+                organizations.append(organization)
+
+            return organizations
         except Exception as e:
             print("Error querying organization:", e)
-    
+
+    def delete_organization(self, organization_id: str) -> bool:
+        query = """DELETE FROM tbl_organization WHERE organization_id = %s"""
+        try:
+            self.db.execute_query(query, (organization_id,))
+            print("Organization deleted successfully!")
+            return True
+        except Exception as e:
+            print("Error deleting organization:", e)
+            return False
+
+    def get_user_organization(self, organization_id: str):
+        query = """SELECT org_member FROM tbl_organization WHERE organization_id = %s"""
+        values = (organization_id,)
+
+        try:
+            result = self.db.execute_query(query, values)
+            print("Query organization successful!")
+            if len(result) == 0:
+                return None
+            
+            user_roles = []
+            for org_info in result:
+                org_members = org_info[0]  # Assuming org_member is a list of usernames
+                for username in org_members:
+                    roles = self.get_user_roles(username)
+                    user_roles.append({"username": username, "roles": roles})
+
+            return user_roles
+        except Exception as e:
+            print("Error getting user organization:", e)
+
+    def get_user_roles(self, username: str):
+        query = """
+            SELECT r.role_name 
+            FROM tbl_customer c 
+            JOIN tbl_role r ON c.role_id = r.role_id 
+            WHERE c.username = %s
+        """
+        values = (username,)
+
+        try:
+            result = self.db.execute_query(query, values)
+            if len(result) == 0:
+                return None
+            return [role[0] for role in result]
+        except Exception as e:
+            print("Error getting user roles:", e)

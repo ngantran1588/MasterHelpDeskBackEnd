@@ -12,17 +12,20 @@ class Auth:
     def __init__(self) -> None:
         pass
 
-    def generate_user_id(self, username: str) -> str:
+    def generate_id(self, name: str) -> str:
         # Get current time
         current_time = datetime.now().strftime("%Y%m%d%H%M%S")
-         
-        # Combine username and current time
-        user_id = f"{username}_{current_time}"
-        
-        # Encode user_id to bytes and then Base64
-        user_id = base64.b64encode(user_id.encode()).decode()
-        
-        return user_id
+
+        # Combine name and current time
+        server_info = f"{name}/{current_time}"
+
+        # Generate a hash digest using SHA-256
+        hash_digest = hashlib.sha256(server_info.encode()).digest()
+
+        # Encode hash digest to Base64 without padding and remove hyphens
+        id = base64.urlsafe_b64encode(hash_digest).decode().rstrip('=').replace('-', '')
+
+        return id
 
     def encrypt_password(self, password: str, user_id: str) -> str:
         # Combine user_id and password
