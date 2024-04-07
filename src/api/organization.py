@@ -184,7 +184,7 @@ def add_user():
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    if not auth.exist_username(username):
+    if not auth.exist_username(new_user):
         db.close()
         return jsonify({"message": "Username does not exist"}), 400
     
