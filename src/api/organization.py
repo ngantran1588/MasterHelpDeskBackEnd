@@ -169,6 +169,7 @@ def add_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     org = Organization(db)
+    auth = Auth(db)
 
     username = request.jwt_payload.get("username")
 
@@ -182,6 +183,10 @@ def add_user():
     if org.check_user_access(username, organization_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
+    
+    if not auth.exist_username(username):
+        db.close()
+        return jsonify({"message": "Username does not exist"}), 400
     
     success = org.add_user(organization_id, new_user)
 
