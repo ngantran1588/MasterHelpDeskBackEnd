@@ -1,5 +1,4 @@
-from datetime import datetime
-import base64
+from .auth import Auth
 
 class Organization:
     def __init__(self,
@@ -11,7 +10,8 @@ class Organization:
              contact_phone: str = None,
              contact_email: str = None,
              org_member: list[str] = None) -> None:
-        self.organization_id = self.generate_organization_id(name)
+        auth = Auth()
+        self.organization_id = auth.generate_id(name)
         self.name = name
         self.customer_id = customer_id
         self.organization_status = organization_status
@@ -21,16 +21,5 @@ class Organization:
         self.contact_email = contact_email
         self.org_member = org_member
 
-    def generate_organization_id(self, name: str) -> str:
-        # Get current time
-        current_time = datetime.now().strftime("%Y%m%d%H%M%S")
-         
-        # Combine username and current time
-        organization_id = f"{name}_{current_time}"
-        
-        # Encode organization_id to bytes and then Base64
-        organization_id = base64.b64encode(organization_id.encode()).decode()
-        
-        return organization_id
     
     
