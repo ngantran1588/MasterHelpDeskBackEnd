@@ -10,9 +10,11 @@ class Organization:
         self.org = Org()
         self.auth = Auth()
 
-    def add_organization(self, name: str, contact_phone: str, contact_email: str, description: str, username: str, org_member: list[str]) -> bool:
+    def add_organization(self, name: str, contact_phone: str, contact_email: str, description: str, username: str) -> bool:
         organization_id = self.auth.generate_id(name)
         organization_status = const.STATUS_ACTIVE
+
+        org_member = []
 
         query_user = """SELECT customer_id FROM tbl_customer WHERE username = %s"""
         value_user = (username,)
