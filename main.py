@@ -1,17 +1,10 @@
-# from dotenv import load_dotenv
-# from flask import Flask
-# from src.api.auth import auth_bp
-# from src.api.organization import organization_bp
-# from src.api.manager import manager_bp
-# from src.api.package import package_bp
-# import secrets
-# from flask_cors import CORS
 from flask import Flask
 from src.api.auth import auth_bp
 from src.api.organization import organization_bp
 from src.api.manager import manager_bp
 from src.api.package import package_bp
 from src.api.server import server_bp
+from src.api.guide import guide_bp
 import secrets
 from flask_cors import CORS
 
@@ -28,6 +21,7 @@ def create_app():
     app.register_blueprint(manager_bp, url_prefix="/manager")
     app.register_blueprint(package_bp, url_prefix="/package")
     app.register_blueprint(server_bp, url_prefix="/server")
+    app.register_blueprint(guide_bp, url_prefix="/guide")
 
     return app
 
