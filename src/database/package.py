@@ -19,7 +19,7 @@ class Package:
         }
 
     def get_packages(self):
-        query = "SELECT * FROM tbl_package"
+        query = "SELECT package_id,package_name,duration,description,slot_number,slot_server,price,status FROM tbl_package"
 
         try:
             result = self.db.execute_query(query)
@@ -29,7 +29,7 @@ class Package:
             return None
 
     def get_package_by_id(self, package_id: str):
-        query = "SELECT * FROM tbl_package WHERE package_id = %s"
+        query = "SELECT package_id,package_name,duration,description,slot_number,slot_server,price,status FROM tbl_package WHERE package_id = %s"
         value = (package_id,)
         try:
             result = self.db.execute_query(query, value)
@@ -37,3 +37,5 @@ class Package:
         except Exception as e:
             print("Error getting organization number of members:", e)
             return None
+        
+    

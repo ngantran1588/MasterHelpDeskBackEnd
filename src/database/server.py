@@ -189,7 +189,7 @@ class Server:
             print("Error querying server:", e)
 
     def get_server_data(self, server_id: str):
-        query = """SELECT * FROM tbl_server WHERE server_id = %s"""
+        query = """SELECT server_id, server_name, host, organization_id, server_type, domain, rsa_key_time, status FROM tbl_server WHERE server_id = %s"""
         values = (server_id,)
 
         try:
