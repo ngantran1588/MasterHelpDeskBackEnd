@@ -7,19 +7,19 @@ import tempfile
 import errno
 
 class ServerManager:
-    def __init__(self, hostname, username, password=None, private_key_path=None):
+    def __init__(self, hostname, username, password=None, private_key=None):
         self.hostname = hostname
         self.username = username
         self.password = password
-        self.private_key_path = private_key_path
+        self.private_key = private_key
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     def connect(self):
         try:
-            if self.private_key_path:
+            if self.private_key:
                 # Use private key authentication
-                private_key = paramiko.RSAKey(filename=self.private_key_path)
+                private_key = paramiko.RSAKey(key=self.private_key)
                 self.client.connect(self.hostname, username=self.username, pkey=private_key)
             elif self.password:
                 # Use password authentication

@@ -251,3 +251,23 @@ class Auth:
         except Exception as e:
             print("Error checking user role:", e)
             return False
+        
+    def check_user_pass(self, username: str, input_password: str) -> bool:
+        try:
+            query = "SELECT customer_id, password FROM tbl_customer WHERE username = %s"
+            values = (username,)
+            result = self.db.execute_query(query, values)
+            
+            if result:
+                customer_id = result[0][0]
+                password = result[0][1]
+
+                if self.auth.compare_passwords(customer_id, input_password, password):
+                    return True
+                return False 
+            else:
+                print("User not found")
+                return False
+        except Exception as e:
+            print("Error checking user password:", e)
+            return False
