@@ -4,6 +4,7 @@ from ..database.server import Server
 from ..database.load_env import LoadDBEnv
 from ..database.auth import Auth
 from ..decorators import token_required
+from ..server_management.server_manager import *
 
 server_bp = Blueprint("server", __name__)
 
@@ -43,6 +44,8 @@ def add_server():
 
     if not all([server_name, host, organization_id, server_type, domain, rsa_key]):
         return jsonify({"message": "Missing required fields"}), 400
+
+    server_connect = ServerManager(domain)
 
     success = server_manager.add_server(server_name, host, organization_id, server_type, domain, rsa_key)
     
@@ -215,4 +218,7 @@ def get_server_in_organization(organization_id):
     else:
         return jsonify({"message": "No servers found for the organization"}), 404
 
-
+@server_bp.route("/connect/<organization_id>", methods=["GET"])
+@token_required
+def connect(organization_id):
+    pass

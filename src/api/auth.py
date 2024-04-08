@@ -225,3 +225,22 @@ def change_role():
     else:
         db.close()
         return jsonify({"message": message}), 500
+
+@auth_bp.route("/check_pass", methods=["POST"])
+@token_required
+def check_pass():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    auth = Auth(db)
+    data = request.get_json()
+    username = request.jwt_payload.get("username")
+    input_pass = data["password"]
+
+    status = auth.check_user_pass(username, input_pass)
+
+    if status:
+        db.close()
+        return jsonify({"message": "Success"}), 200
+    else:
+        db.close()
+        return jsonify({"message": "Unauthorized"}), 403
