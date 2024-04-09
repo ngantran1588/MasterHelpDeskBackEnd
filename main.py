@@ -5,6 +5,7 @@ from src.api.manager import manager_bp
 from src.api.package import package_bp
 from src.api.server import server_bp
 from src.api.guide import guide_bp
+from src.api.role import role_bp
 import secrets
 from flask_cors import CORS
 
@@ -22,6 +23,7 @@ def create_app():
     app.register_blueprint(package_bp, url_prefix="/package")
     app.register_blueprint(server_bp, url_prefix="/server")
     app.register_blueprint(guide_bp, url_prefix="/guide")
+    app.register_blueprint(role_bp, url_prefix="/role")
 
     return app
 
