@@ -271,3 +271,14 @@ class Auth:
         except Exception as e:
             print("Error checking user password:", e)
             return False
+
+    def update_information(self, username: str, full_name: str, email: str):
+        try:
+            query = "UPDATE tbl_customer SET full_name = %s AND email = %s WHERE username = %s"
+            values = (full_name, email, username)
+
+            self.db.execute_query(query, values)
+            return True
+        except Exception as e:
+            print("Error changing information:", e)
+            return False

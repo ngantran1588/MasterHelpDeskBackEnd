@@ -244,3 +244,23 @@ def check_pass():
     else:
         db.close()
         return jsonify({"message": "Unauthorized"}), 403
+
+@auth_bp.route("/update_information", methods=["PUT"])
+@token_required
+def update_information():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    auth = Auth(db)
+    data = request.get_json()
+    username = request.jwt_payload.get("username")
+    full_name = data.get("full_name")
+    email = data.get("email")
+
+    status = auth.update_information(username, full_name, email)
+
+    if status:
+        db.close()
+        return jsonify({"message": "Success"}), 200
+    else:
+        db.close()
+        return jsonify({"message": "Unauthorized"}), 403
