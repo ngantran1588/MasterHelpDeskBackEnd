@@ -43,11 +43,12 @@ def add_server():
         db.close()
         return jsonify({"message": "Failed to add server slot"}), 500
 
-    if not all([server_name, hostname, organization_id, username, password, rsa_key]):
+    if not all([server_name, hostname, organization_id, username]):
         return jsonify({"message": "Missing required fields"}), 400
 
-    # server_connect = ServerManager(password)
-
+    if not password and not rsa_key:
+        return jsonify({"message": "Missing password or rsa key fields"}), 400
+    
     success = server_manager.add_server(username_authen, server_name, hostname, organization_id, username, password, rsa_key, port)
     
     db.close()
@@ -124,7 +125,7 @@ def delete_server(server_id):
     db = connector.DBConnector(*db_env)
     server_manager = Server(db)
     username = request.jwt_payload.get("username")
-    auth = Auth()
+    auth = Auth(db)
 
     if username is None:
         db.close()
@@ -347,11 +348,14 @@ def get_server_info(server_id):
         return jsonify({"message": "Permission denied"}), 403
     
     server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+    print(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
     server.connect()
-
+    
     server.upload_file_to_remote("src/scripts/get_info/get_info.sh", "/root/home")
 
     data_return = server.execute_script_in_remote_server("/root/home/get_info.sh")

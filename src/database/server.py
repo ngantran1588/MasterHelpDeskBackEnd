@@ -26,7 +26,7 @@ class Server:
             INSERT INTO tbl_server (
                 server_id, server_name, hostname, organization_id,
                 username, password, rsa_key, authen_key_time, status, member, port
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         server_member = []
 
@@ -34,12 +34,12 @@ class Server:
         status = const.STATUS_ACTIVE
         passphrase = os.environ.get("RSA_PASSPHRASE")
 
-        if password != None or password != "":
+        if password != None and password != "":
             password = self.encrypt_rsa_key(passphrase.encode(), server_id.encode(), password)
         else:
             password = const.NULL_VALUE
         
-        if rsa_key != None or rsa_key != "":
+        if rsa_key != None and rsa_key != "":
             rsa_key = self.encrypt_rsa_key(passphrase.encode(), server_id.encode(), rsa_key)
         else:
             rsa_key = const.NULL_VALUE
@@ -50,7 +50,7 @@ class Server:
 
         if port == None or port == "":
             port = const.NULL_VALUE
-
+       
         values = (str(server_id), server_name, str(hostname), str(organization_id), username, str(password), str(rsa_key), authen_key_time,status, server_member, port,)
         try:
             self.db.execute_query(query, values)
@@ -172,7 +172,7 @@ class Server:
     def decrypt_rsa_key(self, passphrase: bytes, salt: bytes, rsa_key_encrypted: bytes) -> str:
         nonce = os.environ.get("NONCE")
         key = self.derive_key(passphrase, salt)
-        cipher = Cipher(algorithms.AES(key), modes.CTR(nonce))
+        cipher = Cipher(algorithms.AES(key), modes.CTR(nonce.encode()))
         decryptor = cipher.decryptor()
         rsa_key_decrypted = decryptor.update(rsa_key_encrypted) + decryptor.finalize()
         return rsa_key_decrypted.decode()
@@ -214,8 +214,9 @@ class Server:
             if len(result) == 0:
                 return None
             server_info = result[0]
-            
-            return self.decrypt_rsa_key(server_info["rsa_key"])
+            passphrase = os.environ.get("RSA_PASSPHRASE")
+
+            return self.decrypt_rsa_key(passphrase.encode(), server_id.encode(), server_info[0])
         except Exception as e:
             print("Error querying server:", e)
 
@@ -346,13 +347,26 @@ class Server:
         values = (server_id,)
         try:
             result = self.db.execute_query(query, values)
-         
+            passphrase = os.environ.get("RSA_PASSPHRASE")
+            if result[0][2] != const.NULL_VALUE:
+                pass_encrypted = result[0][2].strip("b'")
+                pass_encrypted = pass_encrypted.encode("utf-8")
+                password = self.decrypt_rsa_key(passphrase.encode(), server_id.encode(), pass_encrypted)
+            else:
+                password = None
+
+            if result[0][3] != const.NULL_VALUE:
+                rsa_key_encrypted = result[0][3].strip("b'")
+                rsa_key_encrypted = pass_encrypted.encode("utf-8")
+                rsa_key = self.decrypt_rsa_key(passphrase.encode(), server_id.encode(), rsa_key_encrypted)
+            else:
+                rsa_key = None
             server = {
                 "server_id": server_id,
                 "hostname": result[0][0],
                 "username": result[0][1],
-                "password": result[0][2],
-                "rsa_key": result[0][3],
+                "password": password,
+                "rsa_key": rsa_key,
             }
             return server
         except Exception as e:
