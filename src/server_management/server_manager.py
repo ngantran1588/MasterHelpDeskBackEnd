@@ -44,7 +44,7 @@ class ServerManager:
             # Print script output
             print(stdout.read().decode())
             print(stderr.read().decode())
-
+            return(stdout.read().decode())
         except Exception as e:
             print(f"Error executing script: {e}")
 
