@@ -3,6 +3,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+import ast
 from . import connector
 from ..const import const
 import hashlib
@@ -349,18 +350,19 @@ class Server:
             result = self.db.execute_query(query, values)
             passphrase = os.environ.get("RSA_PASSPHRASE")
             if result[0][2] != const.NULL_VALUE:
-                pass_encrypted = result[0][2].strip("b'")
-                pass_encrypted = pass_encrypted.encode("utf-8")
+                pass_from_db = result[0][2]
+                pass_encrypted = ast.literal_eval(pass_from_db)
                 password = self.decrypt_rsa_key(passphrase.encode(), server_id.encode(), pass_encrypted)
             else:
                 password = None
 
             if result[0][3] != const.NULL_VALUE:
-                rsa_key_encrypted = result[0][3].strip("b'")
-                rsa_key_encrypted = pass_encrypted.encode("utf-8")
+                rsa_key_from_db = result[0][3]
+                rsa_key_encrypted = ast.literal_eval(rsa_key_from_db)
                 rsa_key = self.decrypt_rsa_key(passphrase.encode(), server_id.encode(), rsa_key_encrypted)
             else:
                 rsa_key = None
+
             server = {
                 "server_id": server_id,
                 "hostname": result[0][0],

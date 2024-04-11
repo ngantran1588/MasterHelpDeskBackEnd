@@ -13,7 +13,7 @@ disk_space=$(df -h --total | grep 'total' | awk '{print $3 " of " $2}')
 os=$(cat /etc/os-release | grep "^PRETTY_NAME" | cut -d= -f2-)
 
 # Get version information
-version=$(cat /etc/os-release | grep "^VERSION=")
+version=$(cat /etc/os-release | grep "^VERSION=" | cut -d= -f2-)
 
 # Construct JSON response
 response='{

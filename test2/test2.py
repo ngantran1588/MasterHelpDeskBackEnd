@@ -23,7 +23,11 @@ def derive_key(passphrase: bytes, salt: bytes) -> bytes:
 
 passphrase = "randomismoresecure"
 server_id = "8deqIsDyimRJCIsxRZgmF7Lhv8ldIa9NLyJDIsoscdA"
-pass_encrypted = b'h\x9b\xe6\xf80+\x93\x987\xb7]\xbf'
+pass_encrypted = "b'h\x9b\xe6\xf80+\x93\x987\xb7]\xbf'"
+print(pass_encrypted)
+pass_encrypted = pass_encrypted.strip("b'")
+print(pass_encrypted)
+pass_encrypted = pass_encrypted.encode("latin")
 password = decrypt_rsa_key(passphrase.encode(), server_id.encode(), pass_encrypted)
 
 print(password)

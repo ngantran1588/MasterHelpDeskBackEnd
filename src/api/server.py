@@ -350,15 +350,19 @@ def get_server_info(server_id):
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         return jsonify({"message":"No data for server"}, 500)
-    print(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
     server.connect()
     
-    server.upload_file_to_remote("src/scripts/get_info/get_info.sh", "/root/home")
-
-    data_return = server.execute_script_in_remote_server("/root/home/get_info.sh")
+    info_path = os.environ.get("SCRIPT_PATH_GET_INFO")
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    server.upload_file_to_remote(info_path, script_directory)
+    file_name = server.get_file_name(info_path)
+    file_in_server = f"{script_directory}/{file_name}"
+    server.grant_permission(file_in_server, 700)
+    data_return = server.execute_script_in_remote_server(file_in_server)
 
     if data_return:
         return jsonify(data_return), 200
