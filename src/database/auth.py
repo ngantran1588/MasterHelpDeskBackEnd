@@ -11,9 +11,7 @@ class Auth:
 
     def exist_username(self, username: str) -> bool:
         user_data = self.db.execute_query("SELECT customer_id FROM tbl_customer WHERE username = %s", (username,))
-        if not user_data:
-            return True
-        if len(user_data) > 0:
+        if user_data is not None and len(user_data) > 0:
             return True
         return False
     
