@@ -183,7 +183,7 @@ class Organization:
             values_count_org = (customer_id,)
             current_slot = self.db.execute_query(query_count_org, values_count_org)[0][0]
 
-            return current_slot < total_slot
+            return current_slot <= total_slot
         except Exception as e:
             print("Error checking organization slot:", e)
             return False
