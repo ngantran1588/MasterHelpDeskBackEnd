@@ -42,10 +42,14 @@ class ServerManager:
 
             # Execute script on the remote server
             stdin, stdout, stderr = self.client.exec_command(f"bash {script_full_path}")
-            # Print script output
-            print(stdout.read().decode())
-            print(stderr.read().decode())
-            return(stdout.read().decode())
+            stdout.channel.recv_exit_status()
+
+            # Read stdout and stderr
+            stdout_data = stdout.read().decode()
+            stderr_data = stderr.read().decode()
+
+            # Return stdout and stderr data
+            return stdout_data
         except Exception as e:
             print(f"Error executing script: {e}")
 
@@ -134,6 +138,7 @@ class ServerManager:
         try:
             self.remove_carriage_return(local_file_path)
 
+            self.create_remote_directory_if_not_exists(remote_file_path)
             # Upload the file to the remote server
             sftp = self.client.open_sftp()
             file_name = self.get_file_name(local_file_path)
@@ -146,6 +151,18 @@ class ServerManager:
         except Exception as e:
             print(f"Error: {e}")
        
+    def create_remote_directory_if_not_exists(self, remote_directory):
+        try:
+            # Check if the directory exists
+            sftp = self.client.open_sftp()
+            sftp.stat(remote_directory)
+            print(f"Directory '{remote_directory}' already exists on the server.")
+        except FileNotFoundError:
+            # Directory does not exist, create it
+            sftp.mkdir(remote_directory)
+            print(f"Directory '{remote_directory}' created on the server.")
+        finally:
+            sftp.close()
 
     def download_file_from_remote(self, remote_file_path, local_file_path):
         try:

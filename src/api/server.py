@@ -1,4 +1,6 @@
 from flask import Blueprint, request, jsonify
+from datetime import datetime
+import json
 from ..database import connector
 from ..database.server import Server 
 from ..database.load_env import LoadDBEnv
@@ -37,7 +39,7 @@ def add_server():
     
     if server_manager.check_server_name_exist(server_name, organization_id):
         db.close()
-        return jsonify({"message": "Organization name exists"}), 500
+        return jsonify({"message": "Server name exists"}), 500
     
     if server_manager.check_server_slot(organization_id):
         db.close()
@@ -363,9 +365,17 @@ def get_server_info(server_id):
     file_in_server = f"{script_directory}/{file_name}"
     server.grant_permission(file_in_server, 700)
     data_return = server.execute_script_in_remote_server(file_in_server)
-
+    
     if data_return:
-        return jsonify(data_return), 200
+        data = json.loads(data_return)
+
+        # Add new key-value pair
+        data["script_directory"] = script_directory
+        data["last_seen"] = str(datetime.now())
+
+        # Convert dictionary back to JSON string
+        updated_json_str = json.dumps(data)
+        return updated_json_str, 200
     return jsonify({"message": "Something is wrong"}), 500
 
 
