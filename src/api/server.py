@@ -1,4 +1,6 @@
 from flask import Blueprint, request, jsonify
+from datetime import datetime
+import json
 from ..database import connector
 from ..database.server import Server 
 from ..database.load_env import LoadDBEnv
@@ -19,35 +21,37 @@ def add_server():
     data = request.get_json()
 
     server_name = data.get("server_name")
-    host = data.get("host")
+    hostname = data.get("hostname")
     organization_id = data.get("organization_id")
-    server_type = data.get("server_type")
-    domain = data.get("domain")
+    username = data.get("username")
+    password = data.get("password")
     rsa_key = data.get("rsa_key")
+    port = data.get("port")
 
-    username = request.jwt_payload.get("username")
-    if username == None:
+    username_authen = request.jwt_payload.get("username")
+    if username_authen == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
-    if auth.check_role(username) == False:
+    if auth.check_role(username_authen) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
     if server_manager.check_server_name_exist(server_name, organization_id):
         db.close()
-        return jsonify({"message": "Organization name exists"}), 500
+        return jsonify({"message": "Server name exists"}), 500
     
     if server_manager.check_server_slot(organization_id):
         db.close()
         return jsonify({"message": "Failed to add server slot"}), 500
 
-    if not all([server_name, host, organization_id, server_type, domain, rsa_key]):
+    if not all([server_name, hostname, organization_id, username]):
         return jsonify({"message": "Missing required fields"}), 400
 
-    server_connect = ServerManager(domain)
-
-    success = server_manager.add_server(server_name, host, organization_id, server_type, domain, rsa_key)
+    if not password and not rsa_key:
+        return jsonify({"message": "Missing password or rsa key fields"}), 400
+    
+    success = server_manager.add_server(username_authen, server_name, hostname, organization_id, username, password, rsa_key, port)
     
     db.close()
     if success:
@@ -69,8 +73,12 @@ def update_rsa_key(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     data = request.get_json()
-    new_rsa_key = data.get("new_rsa_key")
+    new_rsa_key = data.get("rsa_key")
     
     if not new_rsa_key:
         return jsonify({"message": "Missing new RSA key"}), 400
@@ -82,6 +90,35 @@ def update_rsa_key(server_id):
     else:
         return jsonify({"message": "Failed to update RSA key"}), 500
 
+@server_bp.route("/update_password_key/<server_id>", methods=["PUT"])
+@token_required
+def update_password_key(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username_authen = request.jwt_payload.get("username")
+   
+    if username_authen == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if server_manager.check_user_access(username_authen, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    data = request.get_json()
+    new_password_key = data.get("password")
+    
+    if not new_password_key:
+        return jsonify({"message": "Missing new password key"}), 400
+
+    success = server_manager.update_password_key(server_id, new_password_key)
+    
+    if success:
+        return jsonify({"message": "password key updated successfully"}), 200
+    else:
+        return jsonify({"message": "Failed to update password key"}), 500
 
 @server_bp.route("/delete/<server_id>", methods=["DELETE"])
 @token_required
@@ -90,13 +127,17 @@ def delete_server(server_id):
     db = connector.DBConnector(*db_env)
     server_manager = Server(db)
     username = request.jwt_payload.get("username")
-    auth = Auth()
+    auth = Auth(db)
 
     if username is None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
     if auth.check_role(username) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    if server_manager.check_user_access(username, server_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -115,23 +156,27 @@ def update_server_information(server_id):
     db = connector.DBConnector(*db_env)
     server_manager = Server(db)
 
-    username = request.jwt_payload.get("username")
+    username_authen = request.jwt_payload.get("username")
    
-    if username == None:
+    if username_authen == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-
+    
+    if server_manager.check_user_access(username_authen, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     data = request.get_json()
     server_name = data.get("server_name")
-    host = data.get("host")
+    hostname = data.get("hostname")
     organization_id = data.get("organization_id")
-    server_type = data.get("server_type")
-    domain = data.get("domain")
+    username = data.get("username")
+    port = data.get("port")
     
-    if not all([server_name, host, organization_id, server_type, domain]):
+    if not all([server_name, hostname, organization_id, username]):
         return jsonify({"message": "Missing required fields"}), 400
 
-    success = server_manager.update_server_information(server_id, server_name, host, organization_id, server_type, domain)
+    success = server_manager.update_server_information(server_id, server_name, hostname, username, port)
     
     if success:
         return jsonify({"message": "Server information updated successfully"}), 200
@@ -150,7 +195,11 @@ def get_server_data(server_id):
     if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-
+    
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_data = server_manager.get_server_data(server_id)
     
     if server_data:
@@ -170,7 +219,11 @@ def get_server_by_id(server_id):
     if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-
+ 
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_server_by_id(server_id)
     
     if server_info:
@@ -190,7 +243,7 @@ def get_number_server(organization_id):
     if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-
+    
     number_server = server_manager.get_number_server(organization_id)
     
     if number_server is not None:
@@ -210,7 +263,7 @@ def get_server_in_organization(organization_id):
     if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-
+    
     servers_in_organization = server_manager.get_server_in_organization(organization_id)
     
     if servers_in_organization:
@@ -218,7 +271,112 @@ def get_server_in_organization(organization_id):
     else:
         return jsonify({"message": "No servers found for the organization"}), 404
 
-@server_bp.route("/connect/<organization_id>", methods=["GET"])
+@server_bp.route("/add_member", methods=["PUT"])
 @token_required
-def connect(organization_id):
-    pass
+def add_user():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server = Server(db)
+    auth = Auth(db)
+
+    username = request.jwt_payload.get("username")
+
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    server_id = request.json["server_id"]
+    new_user = request.json["new_user"]
+
+    if not auth.exist_username(new_user):
+        db.close()
+        return jsonify({"message": "Username does not exist"}), 400
+    
+    if server.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    success = server.add_user(server_id, new_user)
+
+    db.close()
+
+    if success:
+        return jsonify({"message": "User added to server successfully"}), 200
+    else:
+        return jsonify({"message": "Error adding user to server:"}), 500
+
+@server_bp.route("/remove_member", methods=["PUT"])
+@token_required
+def remove_user():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server = Server(db)
+
+    username = request.jwt_payload.get("username")
+
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    server_id = request.json["server_id"]
+    remove_username = request.json["remove_username"]
+
+    if server.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    success = server.remove_user(server_id, remove_username)
+
+    db.close()
+
+    if success:
+        return jsonify({"message": "User removed from organization successfully"}), 200
+    else:
+        return jsonify({"message": "Failed to remove user from organization"}), 500
+
+@server_bp.route("/get_server_info/<server_id>", methods=["GET"])
+@token_required
+def get_server_info(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+
+    # Connect to the server
+    server.connect()
+    
+    info_path = os.environ.get("SCRIPT_PATH_GET_INFO")
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    server.upload_file_to_remote(info_path, script_directory)
+    file_name = server.get_file_name(info_path)
+    file_in_server = f"{script_directory}/{file_name}"
+    server.grant_permission(file_in_server, 700)
+    data_return = server.execute_script_in_remote_server(file_in_server)
+    
+    if data_return:
+        data = json.loads(data_return)
+
+        # Add new key-value pair
+        data["script_directory"] = script_directory
+        data["last_seen"] = str(datetime.now())
+
+        # Convert dictionary back to JSON string
+        updated_json_str = json.dumps(data)
+        return updated_json_str, 200
+    return jsonify({"message": "Something is wrong"}), 500
+
+
+    

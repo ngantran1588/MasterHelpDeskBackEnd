@@ -3,6 +3,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+import ast
 from . import connector
 from ..const import const
 import hashlib
@@ -20,24 +21,38 @@ class Server:
         self.server = ServerModel()
         self.auth = Auth()
 
-    def add_server(self, server_name: str, host: str, organization_id: str,
-               server_type: str, domain: str, rsa_key: str) -> bool:
+    def add_server(self, user_create_server: str, server_name: str, hostname: str, organization_id: str,
+               username: str, password: str, rsa_key: str, port: str) -> bool:
         query = """
             INSERT INTO tbl_server (
-                server_id, server_name, host, organization_id,
-                server_type, domain, rsa_key, rsa_key_time, status
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                server_id, server_name, hostname, organization_id,
+                username, password, rsa_key, authen_key_time, status, member, port
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
+        server_member = []
+
         server_id = self.auth.generate_id(server_name)
         status = const.STATUS_ACTIVE
         passphrase = os.environ.get("RSA_PASSPHRASE")
-        rsa_key = self.encrypt_rsa_key(passphrase.encode(), server_id.encode(), rsa_key)
-        rsa_key_time = datetime.now() + timedelta(days=30)
-        values = (
-            server_id, server_name, host, organization_id,
-            server_type, domain, rsa_key, rsa_key_time,
-            status
-        )
+
+        if password != None and password != "":
+            password = self.encrypt_rsa_key(passphrase.encode(), server_id.encode(), password)
+        else:
+            password = const.NULL_VALUE
+        
+        if rsa_key != None and rsa_key != "":
+            rsa_key = self.encrypt_rsa_key(passphrase.encode(), server_id.encode(), rsa_key)
+        else:
+            rsa_key = const.NULL_VALUE
+
+        authen_key_time = datetime.now() + timedelta(days=30)
+
+        server_member.append(user_create_server)
+
+        if port == None or port == "":
+            port = const.NULL_VALUE
+       
+        values = (str(server_id), server_name, str(hostname), str(organization_id), username, str(password), str(rsa_key), authen_key_time,status, server_member, port,)
         try:
             self.db.execute_query(query, values)
             return True
@@ -45,6 +60,19 @@ class Server:
             print("Error adding server:", e)
             return False
 
+    def update_password_key(self, server_id: str, password: str) -> bool:
+        passphrase = os.environ.get("RSA_PASSPHRASE")
+        encrypted_password_key = self.encrypt_rsa_key(passphrase.encode(), server_id.encode(), password)
+        query = "UPDATE tbl_server SET password = %s WHERE server_id = %s"
+        values = (encrypted_password_key, server_id)
+        try:
+            self.db.execute_query(query, values)
+            new_authen_key_time = datetime.now() + timedelta(days=30)
+            self.update_authen_key_time(server_id, new_authen_key_time)
+            return True
+        except Exception as e:
+            print("Error updating Password key:", e)
+            return False
 
     def update_rsa_key(self, server_id: str, new_rsa_key: str) -> bool:
         passphrase = os.environ.get("RSA_PASSPHRASE")
@@ -53,16 +81,16 @@ class Server:
         values = (encrypted_rsa_key, server_id)
         try:
             self.db.execute_query(query, values)
-            new_rsa_key_time = datetime.now() + timedelta(days=30)
-            self.update_rsa_key_time(server_id, new_rsa_key_time)
+            new_authen_key_time = datetime.now() + timedelta(days=30)
+            self.update_authen_key_time(server_id, new_authen_key_time)
             return True
         except Exception as e:
             print("Error updating RSA key:", e)
             return False
 
-    def update_rsa_key_time(self, server_id: str, new_rsa_key_time: datetime) -> bool:
-        query = "UPDATE tbl_server SET rsa_key_time = %s WHERE server_id = %s"
-        values = (new_rsa_key_time, server_id)
+    def update_authen_key_time(self, server_id: str, new_authen_key_time: datetime) -> bool:
+        query = "UPDATE tbl_server SET authen_key_time = %s WHERE server_id = %s"
+        values = (new_authen_key_time, server_id)
         try:
             self.db.execute_query(query, values)
             return True
@@ -70,14 +98,14 @@ class Server:
             print("Error updating RSA key time:", e)
             return False
 
-    def check_rsa_key_time_due(self, server_id: str) -> bool:
-        query = "SELECT rsa_key_time FROM tbl_server WHERE server_id = %s"
+    def check_authen_key_time_due(self, server_id: str) -> bool:
+        query = "SELECT authen_key_time FROM tbl_server WHERE server_id = %s"
         values = (server_id,)
         try:
-            rsa_key_time_str = self.db.execute_query(query, values)[0][0]
-            rsa_key_time = datetime.fromisoformat(rsa_key_time_str)
+            authen_key_time_str = self.db.execute_query(query, values)[0][0]
+            authen_key_time = datetime.fromisoformat(authen_key_time_str)
             current_time = datetime.now()
-            if current_time > rsa_key_time:
+            if current_time > authen_key_time:
                 return True
             else:
                 return False
@@ -95,9 +123,13 @@ class Server:
             print("Error deleting server:", e)
             return False
 
-    def update_server_information(self, server_id: str, server_name: str, host: str, organization_id: str, server_type: str, domain: str) -> bool:
-        query = """ UPDATE tbl_server SET server_name = %s, host = %s, organization_id = %s, server_type = %s, domain = %s WHERE server_id = %s"""
-        values = (server_name, host, organization_id, server_type, domain, server_id)
+    def update_server_information(self, server_id: str, server_name: str, hostname: str, username: str, port: str) -> bool:
+
+        if port == None or port == "":
+            port = const.NULL_VALUE
+
+        query = """ UPDATE tbl_server SET server_name = %s, hostname = %s, username = %s, port = %s WHERE server_id = %s"""
+        values = (server_name, hostname, username, server_id, port)
         try:
             self.db.execute_query(query, values)
             print("Server information updated successfully!")
@@ -141,7 +173,7 @@ class Server:
     def decrypt_rsa_key(self, passphrase: bytes, salt: bytes, rsa_key_encrypted: bytes) -> str:
         nonce = os.environ.get("NONCE")
         key = self.derive_key(passphrase, salt)
-        cipher = Cipher(algorithms.AES(key), modes.CTR(nonce))
+        cipher = Cipher(algorithms.AES(key), modes.CTR(nonce.encode()))
         decryptor = cipher.decryptor()
         rsa_key_decrypted = decryptor.update(rsa_key_encrypted) + decryptor.finalize()
         return rsa_key_decrypted.decode()
@@ -183,13 +215,14 @@ class Server:
             if len(result) == 0:
                 return None
             server_info = result[0]
-            
-            return self.decrypt_rsa_key(server_info["rsa_key"])
+            passphrase = os.environ.get("RSA_PASSPHRASE")
+
+            return self.decrypt_rsa_key(passphrase.encode(), server_id.encode(), server_info[0])
         except Exception as e:
             print("Error querying server:", e)
 
     def get_server_data(self, server_id: str):
-        query = """SELECT server_id, server_name, host, organization_id, server_type, domain, rsa_key_time, status FROM tbl_server WHERE server_id = %s"""
+        query = """SELECT server_id, server_name, hostname, organization_id, username, password, rsa_key, authen_key_time, status, member, port FROM tbl_server WHERE server_id = %s"""
         values = (server_id,)
 
         try:
@@ -202,12 +235,15 @@ class Server:
             server = {
                 "server_id": server_info[0],
                 "server_name": server_info[1],
-                "host": server_info[2],
+                "hostname": server_info[2],
                 "organization_id": server_info[3],
-                "server_type": server_info[4],
-                "domain": server_info[5],
-                "rsa_key_time": server_info[6],
-                "status": server_info[7]
+                "username": server_info[4],
+                "password": server_info[5],
+                "rsa_key": server_info[6],
+                "authen_key_time": server_info[7],
+                "status": server_info[8],
+                "member": server_info[9],
+                "port": server_info[10]
             }
 
             return server
@@ -215,7 +251,7 @@ class Server:
             print("Error querying server:", e)
 
     def get_server_by_id(self, server_id: str):
-        query = """SELECT server_name, status FROM tbl_server WHERE server_id = %s"""
+        query = """SELECT server_name, status, hostname FROM tbl_server WHERE server_id = %s"""
         values = (server_id,)
 
         try:
@@ -227,8 +263,9 @@ class Server:
             
             server = {
                 "server_id": server_id,
-                "server_name": server_info["server_name"],
-                "status": server_info["status"]
+                "server_name": server_info[0],
+                "status": server_info[1],
+                "hostname": server_info[2]
             }
                 
             return server
@@ -246,7 +283,7 @@ class Server:
             return False
         
     def get_server_in_organization(self, organization_id: str):
-        query = "SELECT server_id, server_name, status, domain FROM tbl_server WHERE organization_id = %s"
+        query = "SELECT server_id, server_name, status FROM tbl_server WHERE organization_id = %s"
         values = (organization_id,)
         try:
             result = self.db.execute_query(query, values)
@@ -256,7 +293,6 @@ class Server:
                     "server_id": server_info[0],
                     "server_name": server_info[1],
                     "status": server_info[2],
-                    "domain": server_info[3]
                 }
                 servers.append(server)
             return servers
@@ -272,4 +308,69 @@ class Server:
             return result[0][0] > 0
         except Exception as e:
             print("Error checking server name existence:", e)
+            return False
+
+    def check_user_access(self, username: str, server_id: str) -> bool:
+        query = """ SELECT COUNT(*) FROM tbl_server WHERE server_id = %s AND  %s = ANY(member) """
+        values = (server_id, username,)
+        try:
+            result = self.db.execute_query(query, values)
+            access_granted = result[0][0] > 0
+            return access_granted
+        except Exception as e:
+            print("Error checking user access:", e)
+            return False
+        
+    def add_user(self, server_id: str, new_user: list[str]) -> bool:
+        query = """ UPDATE tbl_server SET member = array_append(member, %s) WHERE server_id = %s"""
+        values = (new_user, server_id,)
+        try:
+            self.db.execute_query(query, values)
+            print("User added to server successfully!")
+            return True
+        except Exception as e:
+            print("Error adding user to server:", e)
+            return False
+
+    def remove_user(self, server_id: str, remove_username: str) -> bool:
+        query = """UPDATE tbl_server SET member = array_remove(member, %s) WHERE server_id = %s"""
+        values = (remove_username, server_id,)
+        try:
+            self.db.execute_query(query, values)
+            print("User removed from server successfully!")
+            return True
+        except Exception as e:
+            print("Error removing user from server:", e)
+            return False
+        
+    def get_info_to_connect(self, server_id: str):
+        query = "SELECT hostname, username, password, rsa_key FROM tbl_server WHERE server_id = %s"
+        values = (server_id,)
+        try:
+            result = self.db.execute_query(query, values)
+            passphrase = os.environ.get("RSA_PASSPHRASE")
+            if result[0][2] != const.NULL_VALUE:
+                pass_from_db = result[0][2]
+                pass_encrypted = ast.literal_eval(pass_from_db)
+                password = self.decrypt_rsa_key(passphrase.encode(), server_id.encode(), pass_encrypted)
+            else:
+                password = None
+
+            if result[0][3] != const.NULL_VALUE:
+                rsa_key_from_db = result[0][3]
+                rsa_key_encrypted = ast.literal_eval(rsa_key_from_db)
+                rsa_key = self.decrypt_rsa_key(passphrase.encode(), server_id.encode(), rsa_key_encrypted)
+            else:
+                rsa_key = None
+
+            server = {
+                "server_id": server_id,
+                "hostname": result[0][0],
+                "username": result[0][1],
+                "password": password,
+                "rsa_key": rsa_key,
+            }
+            return server
+        except Exception as e:
+            print("Error getting server info:", e)
             return False

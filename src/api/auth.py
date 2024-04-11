@@ -25,7 +25,7 @@ def login():
         return jsonify({"message": "Missing required fields"}), 400
    
     if auth.login(username, password):
-        payload = {"username": username, "exp": datetime.now(timezone.utc) + timedelta(minutes=10)}
+        payload = {"username": username, "exp": datetime.now(timezone.utc) + timedelta(minutes=45)}
         token = jwt.encode(payload, os.environ.get("JWT_SECRET_KEY"), algorithm="HS256")
         db.close()
         return jsonify({"message": "Login successful", "access_token": token}), 200
@@ -82,7 +82,7 @@ def resend_otp():
     data = request.get_json()
     email = data["email"]
 
-    auth.delete_used_otp(email)
+    auth.delete_otp_email(email)
 
     if auth.send_otp(email):
         db.close()
@@ -93,7 +93,6 @@ def resend_otp():
     
 
 @auth_bp.route("/verify_otp", methods=["POST"])
-@token_required
 def verify_otp():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)

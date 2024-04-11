@@ -1,6 +1,7 @@
 import paramiko
 from getpass import getpass
 import os
+import subprocess
 import stat
 import zipfile
 import tempfile
@@ -37,16 +38,41 @@ class ServerManager:
     def execute_script_in_remote_server(self, script_relative_path, *args):
         try:
             # Construct the full path of the script on the server
-            script_full_path = f"bash {script_relative_path} {' '.join(args)}"
+            script_full_path = f"{script_relative_path} {' '.join(args)}"
 
             # Execute script on the remote server
             stdin, stdout, stderr = self.client.exec_command(f"bash {script_full_path}")
+            stdout.channel.recv_exit_status()
+
+            # Read stdout and stderr
+            stdout_data = stdout.read().decode()
+            stderr_data = stderr.read().decode()
+
+            # Return stdout and stderr data
+            return stdout_data
+        except Exception as e:
+            print(f"Error executing script: {e}")
+
+    def grant_permission(self, script_relative_path, role):
+        try:
+            # Execute script on the remote server
+            stdin, stdout, stderr = self.client.exec_command(f"chmod {role} {script_relative_path}")
             # Print script output
             print(stdout.read().decode())
             print(stderr.read().decode())
-
+            return(stdout.read().decode())
         except Exception as e:
             print(f"Error executing script: {e}")
+
+    def check_script_exists_on_remote(self, remote_file_path):
+        try:
+            # Check if the remote script file exists
+            remote_file_check = self.client.exec_command(f'stat {remote_file_path}')
+            return remote_file_check.returncode == 0
+
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
 
     def execute_script(self, script_path, *args):
         try:
@@ -94,8 +120,25 @@ class ServerManager:
     def get_file_name(self, file_path):
         return os.path.basename(file_path)
 
+    def remove_carriage_return(self, file_path):
+        try:
+            with open(file_path, 'r', newline='') as file:
+                lines = file.readlines()
+
+            with open(file_path, 'w', newline='') as file:
+                for line in lines:
+                    file.write(line.rstrip('\r\n') + '\n')
+
+            print("Carriage return characters removed successfully.")
+
+        except Exception as e:
+            print(f"Error: {e}")
+
     def upload_file_to_remote(self, local_file_path, remote_file_path):
         try:
+            self.remove_carriage_return(local_file_path)
+
+            self.create_remote_directory_if_not_exists(remote_file_path)
             # Upload the file to the remote server
             sftp = self.client.open_sftp()
             file_name = self.get_file_name(local_file_path)
@@ -108,6 +151,18 @@ class ServerManager:
         except Exception as e:
             print(f"Error: {e}")
        
+    def create_remote_directory_if_not_exists(self, remote_directory):
+        try:
+            # Check if the directory exists
+            sftp = self.client.open_sftp()
+            sftp.stat(remote_directory)
+            print(f"Directory '{remote_directory}' already exists on the server.")
+        except FileNotFoundError:
+            # Directory does not exist, create it
+            sftp.mkdir(remote_directory)
+            print(f"Directory '{remote_directory}' created on the server.")
+        finally:
+            sftp.close()
 
     def download_file_from_remote(self, remote_file_path, local_file_path):
         try:
