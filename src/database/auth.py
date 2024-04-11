@@ -53,15 +53,14 @@ class Auth:
         
         # Insert the customer data into the database
         query = """
-            INSERT INTO tbl_customer (customer_id, username, password, full_name, email, role_id, status, organization_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO tbl_customer (customer_id, username, password, full_name, email, role_id, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         role_id = [const.ROLE_ID_USER]
         status = const.STATUS_ACTIVE
-        organization_id = const.NULL_VALUE
 
         values = (customer_id, username, encrypted_password, full_name, email,
-                  role_id, status, organization_id)
+                  role_id, status)
         try:
             self.db.execute_query(query, values)
             print("Sign-up successful!")
@@ -206,18 +205,18 @@ class Auth:
             print("Error changing password:", e)
 
     # Reset password
-    def reset_password(self, username, new_password):
-        query = "SELECT customer_id, password from tbl_customer WHERE username = %s"
-        value = (username,)
+    def reset_password(self, email, new_password):
+        query = "SELECT customer_id from tbl_customer WHERE email = %s"
+        value = (email,)
 
         try:
             result = self.db.execute_query(query, value)
-            user_id, stored_password = result[0]
+            user_id = result[0]
             
-            new_password = self.encrypt_password(new_password, user_id)
+            new_password = self.auth.encrypt_password(new_password, user_id)
 
-            query = "UPDATE tbl_customer SET password = %s WHERE username = %s"
-            values = (new_password, username)
+            query = "UPDATE tbl_customer SET password = %s WHERE email = %s"
+            values = (new_password, email)
 
             self.db.execute_query(query, values)
             return "Update password successfully", True
@@ -281,3 +280,70 @@ class Auth:
         except Exception as e:
             print("Error changing information:", e)
             return False
+
+    def get_profile(self, username: str):
+        query = """SELECT customer_id, username, password, full_name, email, role_id, status FROM tbl_customer WHERE username = %s"""
+        values = (username,)
+
+        try:
+            result = self.db.execute_query(query, values)
+            print("Query profile successful!")
+            if len(result) == 0:
+                return None
+            customer_info = result[0]
+            customer = {
+                "customer_id": customer_info[0],
+                "username": customer_info[1],
+                "password": customer_info[2],
+                "full_name": customer_info[3],
+                "email": customer_info[4],
+                "role_id": customer_info[5],
+                "status": customer_info[6]
+            }
+               
+            return customer
+        except Exception as e:
+            print("Error querying customer:", e)
+
+    def get_all_profile(self):
+        query = """SELECT customer_id, username, full_name, email, status FROM tbl_customer"""
+
+        try:
+            result = self.db.execute_query(query)
+            print("Query profile successful!")
+            if len(result) == 0:
+                return None
+            customers = []
+            for customer_info in result:
+                customer = {
+                    "customer_id": customer_info[0],
+                    "username": customer_info[1],
+                    "full_name": customer_info[2],
+                    "email": customer_info[3],
+                    "status": customer_info[4]
+                }
+                customers.append(customer)
+            return customers
+        except Exception as e:
+            print("Error querying customer:", e)
+
+    def get_profile_by_id(self, customer_id: str):
+        query = """SELECT customer_id, username, full_name, email, status FROM tbl_customer WHERE customer_id = %s"""
+        value = (customer_id,)
+        try:
+            result = self.db.execute_query(query, value)
+            print("Query profile successful!")
+            if len(result) == 0:
+                return None
+            customer_info = result[0]
+            customer = {
+                "customer_id": customer_info[0],
+                "username": customer_info[1],
+                "full_name": customer_info[2],
+                "email": customer_info[3],
+                "status": customer_info[4]
+            }
+            return customer
+        except Exception as e:
+            print("Error querying customer:", e)
+    

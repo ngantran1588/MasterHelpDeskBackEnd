@@ -150,19 +150,15 @@ def reset_password():
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
     data = request.get_json()
-    username = data["username"]
+    email = data["email"]
     new_password = data["new_password"]
 
     otp_verified = request.jwt_payload.get("otp_verified")
     if otp_verified != True:
         db.close()
         return jsonify({"message": "Verify OTP first"}), 403
-    username_token = request.jwt_payload.get("username")
-    if username != username_token:
-        db.close()
-        return jsonify({"message": "You don't have permission"}), 403 
     
-    message, status = auth.reset_password(username, new_password)
+    message, status = auth.reset_password(email, new_password)
 
     response = jsonify({"message": message})
     response.delete_cookie("otp_verified")  # Remove token cookie
@@ -260,6 +256,72 @@ def update_information():
     if status:
         db.close()
         return jsonify({"message": "Success"}), 200
+    else:
+        db.close()
+        return jsonify({"message": "Unauthorized"}), 403
+
+@auth_bp.route("/get_profile", methods=["GET"])
+@token_required
+def get_profile():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    auth = Auth(db)
+    data = request.get_json()
+    username = request.jwt_payload.get("username")
+    
+    customer = auth.get_profile(username)
+
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    if customer:
+        db.close()
+        return jsonify(customer), 200
+    else:
+        db.close()
+        return jsonify({"message": "Unauthorized"}), 403
+    
+@auth_bp.route("/get_all_profile", methods=["GET"])
+@token_required
+def get_all_profile():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    auth = Auth(db)
+    data = request.get_json()
+    username = request.jwt_payload.get("username")
+
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    customers = auth.get_all_profile()
+
+    if customers:
+        db.close()
+        return jsonify(customers), 200
+    else:
+        db.close()
+        return jsonify({"message": "Unauthorized"}), 403
+    
+@auth_bp.route("/get_profile_by_id/<customer_id>", methods=["GET"])
+@token_required
+def get_profile_by_id(customer_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    auth = Auth(db)
+    data = request.get_json()
+    username = request.jwt_payload.get("username")
+
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    customers = auth.get_profile_by_id(customer_id)
+
+    if customers:
+        db.close()
+        return jsonify(customers), 200
     else:
         db.close()
         return jsonify({"message": "Unauthorized"}), 403
