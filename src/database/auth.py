@@ -11,6 +11,8 @@ class Auth:
 
     def exist_username(self, username: str) -> bool:
         user_data = self.db.execute_query("SELECT customer_id FROM tbl_customer WHERE username = %s", (username,))
+        if not user_data:
+            return True
         if len(user_data) > 0:
             return True
         return False
@@ -24,11 +26,11 @@ class Auth:
     def login(self, username: str, password: str) -> bool:
         # Retrieve user data from the database by email
         user_data = self.db.execute_query("SELECT customer_id, password FROM tbl_customer WHERE username = %s", (username,))
-        
+      
         if user_data:
             # Extract user_id and stored_password from the retrieved data
             customer_id, stored_password = user_data[0]
-            
+
             # Compare the hashed entered password with the stored password
             return self.auth.compare_passwords(customer_id, password, stored_password)
         else:
@@ -242,9 +244,8 @@ class Auth:
             query = "SELECT role_id FROM tbl_customer WHERE username = %s"
             values = (username,)
             result = self.db.execute_query(query, values)
-            
             if result:
-                return const.ROLE_ID_SUPER_USER in result[0]  
+                return const.ROLE_ID_SUPER_USER == result[0][0][0]
             else:
                 print("User not found or has no roles.")
                 return False
