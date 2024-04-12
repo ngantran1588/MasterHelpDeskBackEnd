@@ -183,7 +183,7 @@ class Organization:
             values_count_org = (customer_id,)
             current_slot = self.db.execute_query(query_count_org, values_count_org)[0][0]
 
-            return current_slot < total_slot
+            return current_slot <= total_slot
         except Exception as e:
             print("Error checking organization slot:", e)
             return False
@@ -259,9 +259,9 @@ class Organization:
 
     def get_user_roles(self, username: str):
         query = """
-            SELECT r.role_name 
+            SELECT DISTINCT r.role_name 
             FROM tbl_customer c 
-            JOIN tbl_role r ON c.role_id = r.role_id 
+            JOIN tbl_role r ON r.role_id = ANY(c.role_id) 
             WHERE c.username = %s
         """
         values = (username,)
@@ -270,6 +270,9 @@ class Organization:
             result = self.db.execute_query(query, values)
             if len(result) == 0:
                 return None
-            return [role[0] for role in result]
+            
+            # Extract role names from the result
+            role_names = [role[0] for role in result]
+            return role_names
         except Exception as e:
             print("Error getting user roles:", e)

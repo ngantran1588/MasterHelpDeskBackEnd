@@ -47,7 +47,8 @@ class ServerManager:
             # Read stdout and stderr
             stdout_data = stdout.read().decode()
             stderr_data = stderr.read().decode()
-
+            if stderr_data:
+                print(stderr_data)
             # Return stdout and stderr data
             return stdout_data
         except Exception as e:
@@ -67,12 +68,19 @@ class ServerManager:
     def check_script_exists_on_remote(self, remote_file_path):
         try:
             # Check if the remote script file exists
-            remote_file_check = self.client.exec_command(f'stat {remote_file_path}')
-            return remote_file_check.returncode == 0
+            stdin, stdout, stderr = self.client.exec_command(f'stat {remote_file_path}')
+            
+            # Read the output stream to get the command result
+            output = stdout.read().decode().strip()
+            error = stderr.read().decode().strip()
+            if error:
+                return "No such file or directory" not in error
+            return "No such file or directory" not in output
 
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error in checking script: {e}")
             return False
+
 
     def execute_script(self, script_path, *args):
         try:
