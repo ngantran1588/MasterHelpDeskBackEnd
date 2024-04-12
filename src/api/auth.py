@@ -266,11 +266,10 @@ def get_profile():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
-    data = request.get_json()
     username = request.jwt_payload.get("username")
     
     customer = auth.get_profile(username)
-
+    
     if username == None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
@@ -288,7 +287,7 @@ def get_all_profile():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
-    data = request.get_json()
+    
     username = request.jwt_payload.get("username")
 
     if username == None:
@@ -310,7 +309,7 @@ def get_profile_by_id(customer_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
-    data = request.get_json()
+    
     username = request.jwt_payload.get("username")
 
     if username == None:

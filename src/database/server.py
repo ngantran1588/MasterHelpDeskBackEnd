@@ -200,7 +200,7 @@ class Server:
             values_count_server = (organization_id,)
             current_slot = self.db.execute_query(query_count_server, values_count_server)[0][0]
             
-            return current_slot > total_slot
+            return current_slot >= total_slot
         except Exception as e:
             print("Error checking server slot:", e)
             return False
