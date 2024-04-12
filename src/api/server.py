@@ -449,8 +449,11 @@ def update_proxy(server_id):
     data = request.json
 
     protocol = data["protocol"]
-    old_domain = data["old_domain"]
-    old_port = data["old_port"]
+    detail = data["detail"]
+    input_data = str(detail).split("//")
+    input_data = input_data[1].split(":")
+    old_domain = input_data[0]
+    old_port = input_data[1]
     new_domain = data["new_domain"]
     new_port = data["new_port"]
 
@@ -504,8 +507,11 @@ def add_proxy(server_id):
     data = request.json
 
     protocol = data["protocol"]
-    domain = data["domain"]
-    port = data["port"]
+    detail = data["detail"]
+    input_data = str(detail).split("//")
+    input_data = input_data[1].split(":")
+    domain = input_data[0]
+    port = input_data[1]
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
@@ -557,8 +563,11 @@ def delete_proxy(server_id):
     data = request.json
 
     protocol = data["protocol"]
-    domain = data["domain"]
-    port = data["port"]
+    detail = data["detail"]
+    input_data = str(detail).split("//")
+    input_data = input_data[1].split(":")
+    domain = input_data[0]
+    port = input_data[1]
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
