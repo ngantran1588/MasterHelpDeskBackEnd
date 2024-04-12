@@ -738,3 +738,138 @@ def uninstall_lib(server_id):
     if data_return:
         return data_return, 200
     return jsonify({"message": "Something is wrong"}), 500
+
+
+@server_bp.route("/firewall_action/<server_id>", methods=["POST"])
+@token_required
+def firewall_action(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+    data = request.json
+
+    action = data["action"]
+    port = data.get("port")
+    ip = data.get("ip")
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+
+    # Connect to the server
+    server.connect()
+    arg = None
+    if action == "allow_ip":
+        action_path = os.environ.get("SCRIPT_PATH_ALLOW_IP")
+        if not ip or ip == "":
+            return jsonify({"message":"IP required"}, 500)
+        arg = ip
+    elif action == "allow_port":
+        action_path = os.environ.get("SCRIPT_PATH_ALLOW_PORT")
+        if not port or port == "":
+            return jsonify({"message":"Port required"}, 500)
+        arg = port
+    elif action == "deny_ip":
+        action_path = os.environ.get("SCRIPT_PATH_DENY_IP")
+        if not ip or ip == "":
+            return jsonify({"message":"IP required"}, 500)
+        arg = ip
+    elif action == "deny_port":
+        action_path = os.environ.get("SCRIPT_PATH_DENY_PORT")
+        if not port or port == "":
+            return jsonify({"message":"Port required"}, 500)
+        arg = port
+    elif action == "enable_firewall":
+        action_path = os.environ.get("SCRIPT_PATH_ENABLE_FIREWALL")
+    elif action == "disable_firewall":
+        action_path = os.environ.get("SCRIPT_PATH_DISABLE_FIREWALL")
+    elif action == "reset_firewall":
+        action_path = os.environ.get("SCRIPT_PATH_RESET_FIREWALL")
+    
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(action_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(action_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+
+    data_return = server.execute_script_in_remote_server(file_in_server, arg)
+    
+    if data_return:
+        return data_return, 200
+    return jsonify({"message": "Something is wrong"}), 500
+
+@server_bp.route("/firewall_rules/<server_id>", methods=["POST"])
+@token_required
+def firewall_rules(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+
+    # Connect to the server
+    server.connect()
+    
+   
+    action_path = os.environ.get("SCRIPT_PATH_SHOW_STATUS")
+
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(action_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(action_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+
+    data_return = server.execute_script_in_remote_server(file_in_server)
+    
+    if data_return:
+        # Parse the output
+        lines = data_return.split('\n')
+        rules = []
+        
+        for line in lines:
+            if not line.startswith('--'):
+                # Split the line into columns
+                columns = line.split()
+                if len(columns) >= 3:
+                    if columns[0] == "To":
+                        continue
+                    to = columns[0]
+                    action = columns[1]
+                    frm = ' '.join(columns[2:])
+                    rules.append({'to': to, 'action': action, 'from': frm})
+
+        return json.dumps(rules, indent=4), 200
+    return jsonify({"message": "Something is wrong"}), 500
