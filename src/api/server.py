@@ -360,10 +360,14 @@ def get_server_info(server_id):
     
     info_path = os.environ.get("SCRIPT_PATH_GET_INFO")
     script_directory = os.environ.get("SERVER_DIRECTORY")
-    server.upload_file_to_remote(info_path, script_directory)
+
     file_name = server.get_file_name(info_path)
     file_in_server = f"{script_directory}/{file_name}"
-    server.grant_permission(file_in_server, 700)
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(info_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+
     data_return = server.execute_script_in_remote_server(file_in_server)
     
     if data_return:
@@ -379,4 +383,46 @@ def get_server_info(server_id):
     return jsonify({"message": "Something is wrong"}), 500
 
 
+@server_bp.route("/get_all_proxy/<server_id>", methods=["GET"])
+@token_required
+def get_all_proxy(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+
+    # Connect to the server
+    server.connect()
+    
+    proxy_path = os.environ.get("SCRIPT_PATH_GET_ALL_PROXY")
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(proxy_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(proxy_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+
+    data_return = server.execute_script_in_remote_server(file_in_server)
+    
+    if data_return:
+        data = json.loads(data_return)
+        updated_json_str = json.dumps(data)
+        return updated_json_str, 200
+    return jsonify({"message": "Something is wrong"}), 500
     

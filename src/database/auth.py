@@ -272,8 +272,8 @@ class Auth:
 
     def update_information(self, username: str, full_name: str, email: str):
         try:
-            query = "UPDATE tbl_customer SET full_name = %s AND email = %s WHERE username = %s"
-            values = (full_name, email, username)
+            query = """UPDATE tbl_customer SET full_name = %s, email = %s WHERE username = %s"""
+            values = (full_name, email, username,)
 
             self.db.execute_query(query, values)
             return True
