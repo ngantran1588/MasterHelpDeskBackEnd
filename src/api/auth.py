@@ -288,7 +288,7 @@ def get_all_profile():
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
     
-    username = request.jwt_payload.get("username")
+    username = request.jwt_payload.get("manager_username")
 
     if username == None:
         db.close()
