@@ -597,23 +597,34 @@ def delete_proxy(server_id):
         return data_return, 200
     return jsonify({"message": "Something is wrong"}), 500
 
-@server_bp.route("/lib_status/<server_id>", methods=["POST"])
+@server_bp.route("/lib_status/<server_id>", methods=["GET"])
 @token_required
 def lib_status(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     server_manager = Server(db)
     library_db = Library(db)
-    data = request.json
-    library = data["library"]
 
-    lib_data = library_db.get_library(server_id, library)
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
 
-    if not lib_data:
-        library_db.insert_library(server_id, library, False)
-        return jsonify({"installed": "False"}, 200)
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
     
-    return jsonify({"installed": str(lib_data["installed"])}, 200)
+    library_list = ["docker", "mongodb", "nginx", "pip", "postgre", "python"]
+    return_list = []
+    for library in library_list:
+        lib_data = library_db.get_library(server_id, library)
+
+        if not lib_data:
+            library_db.insert_library(server_id, library, False)
+            return_list.append({"library": library, "installed": "False"})
+        else:
+            return_list.append({"library": library, "installed": str(lib_data["installed"])})
+    return return_list, 200
 
 @server_bp.route("/install_lib/<server_id>", methods=["POST"])
 @token_required
