@@ -425,4 +425,59 @@ def get_all_proxy(server_id):
         updated_json_str = json.dumps(data)
         return updated_json_str, 200
     return jsonify({"message": "Something is wrong"}), 500
+
+@server_bp.route("/update_proxy/<server_id>", methods=["POST"])
+@token_required
+def update_proxy(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
     
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+    data = request.json
+
+    protocol = data["protocol"]
+    old_domain = data["old_domain"]
+    old_port = data["old_port"]
+    new_domain = data["new_domain"]
+    new_port = data["new_port"]
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+
+    # Connect to the server
+    server.connect()
+    
+    if protocol == "ftp_proxy":
+        proxy_path = os.environ.get("SCRIPT_PATH_UPDATE_FTP_PROXY")
+    elif protocol == "http_proxy":
+        proxy_path = os.environ.get("SCRIPT_PATH_UPDATE_HTTP_PROXY")
+    elif protocol == "https_proxy":
+        proxy_path = os.environ.get("SCRIPT_PATH_UPDATE_HTTPS_PROXY")
+
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(proxy_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(proxy_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+
+    data_return = server.execute_script_in_remote_server(file_in_server, old_domain, old_port, new_domain, new_port)
+    
+    if data_return:
+        return data_return, 200
+    return jsonify({"message": "Something is wrong"}), 500
+
