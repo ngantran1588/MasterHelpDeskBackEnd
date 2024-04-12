@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from ..database import connector
-from ..database.auth import Auth
+from ..database.manager_auth import Auth
 from ..database.load_env import LoadDBEnv
 import os
 from dotenv import load_dotenv
