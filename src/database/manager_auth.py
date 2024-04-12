@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-import connector
+from . import connector
 from ..const import const
 from ..models.auth import Auth as auth
 

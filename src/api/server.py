@@ -586,3 +586,118 @@ def delete_proxy(server_id):
     if data_return:
         return data_return, 200
     return jsonify({"message": "Something is wrong"}), 500
+
+@server_bp.route("/install_lib/<server_id>", methods=["POST"])
+@token_required
+def install_lib(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+    data = request.json
+
+    library = data["library"]
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+
+    # Connect to the server
+    server.connect()
+    
+    if library == "docker":
+        library_path = os.environ.get("SCRIPT_PATH_LIB_INSTALL_DOCKER")
+    elif library == "mongodb":
+        library_path = os.environ.get("SCRIPT_PATH_LIB_INSTALL_MONGODB")
+    elif library == "nginx":
+        library_path = os.environ.get("SCRIPT_PATH_LIB_INSTALL_NGINX")
+    elif library == "pip":
+        library_path = os.environ.get("SCRIPT_PATH_LIB_INSTALL_PIP")
+    elif library == "postgre":
+        library_path = os.environ.get("SCRIPT_PATH_LIB_INSTALL_POSTGRE") 
+    elif library == "python":
+        library_path = os.environ.get("SCRIPT_PATH_LIB_INSTALL_PYTHON")
+
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(library_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(library_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+
+    data_return = server.execute_script_in_remote_server(file_in_server)
+    
+    if data_return:
+        return data_return, 200
+    return jsonify({"message": "Something is wrong"}), 500
+
+@server_bp.route("/uninstall_lib/<server_id>", methods=["POST"])
+@token_required
+def uninstall_lib(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+    data = request.json
+
+    library = data["library"]
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+
+    # Connect to the server
+    server.connect()
+    
+    if library == "docker":
+        library_path = os.environ.get("SCRIPT_PATH_LIB_UNINSTALL_DOCKER")
+    elif library == "mongodb":
+        library_path = os.environ.get("SCRIPT_PATH_LIB_UNINSTALL_MONGODB")
+    elif library == "nginx":
+        library_path = os.environ.get("SCRIPT_PATH_LIB_UNINSTALL_NGINX")
+    elif library == "pip":
+        library_path = os.environ.get("SCRIPT_PATH_LIB_UNINSTALL_PIP")
+    elif library == "postgre":
+        library_path = os.environ.get("SCRIPT_PATH_LIB_UNINSTALL_POSTGRE")
+    elif library == "python":
+        library_path = os.environ.get("SCRIPT_PATH_LIB_UNINSTALL_PYTHON")
+
+
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(library_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(library_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+
+    data_return = server.execute_script_in_remote_server(file_in_server)
+    
+    if data_return:
+        return data_return, 200
+    return jsonify({"message": "Something is wrong"}), 500
