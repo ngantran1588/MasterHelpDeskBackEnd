@@ -20,7 +20,7 @@ class Organization:
         value_user = (username,)
 
         user_data = self.db.execute_query(query_user, value_user)
-
+        
         query_subcription = """SELECT subscription_id FROM tbl_subscription WHERE customer_id = %s"""
         value_subscription = (str(user_data[0][0]),)
         
@@ -41,7 +41,7 @@ class Organization:
         """
 
         values = (str(organization_id), name, str(user_data[0][0]), organization_status, str(subscription_id[0][0]), description, contact_phone, contact_email, org_member,)
-
+        
         try:
             self.db.execute_query(query, values)
             print("Add organization successful!")
