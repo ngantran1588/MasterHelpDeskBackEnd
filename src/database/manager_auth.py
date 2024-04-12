@@ -1,14 +1,14 @@
 from datetime import datetime, timedelta
 from . import connector
 from ..const import const
-from ..models.auth import Auth as auth
+from ..models.auth import Auth as AuthAPI 
 
 
 class Auth:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
         self.db.connect()
-
+        self.auth = AuthAPI()
         
     def login(self, manager_username: str, manager_password: str) -> bool:
         # Retrieve user data from the database by email
@@ -19,7 +19,7 @@ class Auth:
             manager_id, stored_password = manager_data[0]
 
             # Compare the hashed entered password with the stored password
-            return auth.compare_passwords(manager_id, manager_password, stored_password)
+            return self.auth.compare_passwords(manager_id, manager_password, stored_password)
         else:
             return False
         
