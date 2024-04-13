@@ -97,7 +97,7 @@ def update_rsa_key(server_id):
         return jsonify({"message": "Missing new RSA key"}), 400
 
     success = server_manager.update_rsa_key(server_id, new_rsa_key)
-    
+    db.close()
     if success:
         return jsonify({"message": "RSA key updated successfully"}), 200
     else:
@@ -127,7 +127,7 @@ def update_password_key(server_id):
         return jsonify({"message": "Missing new password key"}), 400
 
     success = server_manager.update_password_key(server_id, new_password_key)
-    
+    db.close()
     if success:
         return jsonify({"message": "password key updated successfully"}), 200
     else:
@@ -155,7 +155,7 @@ def delete_server(server_id):
         return jsonify({"message": "Permission denied"}), 403
     
     success = server_manager.delete_server(server_id)
-    
+    db.close()
     if success:
         return jsonify({"message": "Server deleted successfully"}), 200
     else:
@@ -190,7 +190,7 @@ def update_server_information(server_id):
         return jsonify({"message": "Missing required fields"}), 400
 
     success = server_manager.update_server_information(server_id, server_name, hostname, username, port)
-    
+    db.close()
     if success:
         return jsonify({"message": "Server information updated successfully"}), 200
     else:
@@ -214,7 +214,7 @@ def get_server_data(server_id):
         return jsonify({"message": "Permission denied"}), 403
     
     server_data = server_manager.get_server_data(server_id)
-    
+    db.close()
     if server_data:
         return jsonify(server_data), 200
     else:
@@ -238,7 +238,7 @@ def get_server_by_id(server_id):
         return jsonify({"message": "Permission denied"}), 403
     
     server_info = server_manager.get_server_by_id(server_id)
-    
+    db.close()
     if server_info:
         return jsonify(server_info), 200
     else:
@@ -258,7 +258,7 @@ def get_number_server(organization_id):
         return jsonify({"message": "Permission denied"}), 403
     
     number_server = server_manager.get_number_server(organization_id)
-    
+    db.close()
     if number_server is not None:
         return jsonify({"number_server": number_server}), 200
     else:
@@ -278,7 +278,7 @@ def get_server_in_organization(organization_id):
         return jsonify({"message": "Permission denied"}), 403
     
     servers_in_organization = server_manager.get_server_in_organization(organization_id)
-    
+    db.close()
     if servers_in_organization:
         return jsonify(servers_in_organization), 200
     else:
@@ -380,7 +380,7 @@ def get_server_info(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(info_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server)
     server.disconnect()
     if data_return:
@@ -430,7 +430,7 @@ def get_all_proxy(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(proxy_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server)
     server.disconnect()
     if data_return:
@@ -490,7 +490,7 @@ def update_proxy(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(proxy_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server, old_domain, old_port, new_domain, new_port)
     server.disconnect()
     if data_return:
@@ -546,7 +546,7 @@ def add_proxy(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(proxy_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server, domain, port)
     server.disconnect()
     if data_return:
@@ -602,7 +602,7 @@ def delete_proxy(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(proxy_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server, domain, port)
     server.disconnect()
     if data_return:
@@ -628,6 +628,7 @@ def lib_status(server_id):
     
     library_list = ["docker", "mongodb", "nginx", "pip", "postgre", "python"]
     return_list = []
+    db.close()
     for library in library_list:
         lib_data = library_db.get_library(server_id, library)
 
@@ -693,7 +694,7 @@ def install_lib(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(library_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server)
     server.disconnect()
     if data_return:
@@ -755,7 +756,7 @@ def uninstall_lib(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(library_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server)
     server.disconnect()
     if data_return:
@@ -829,7 +830,7 @@ def firewall_action(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(action_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server, arg)
     server.disconnect()
     if data_return:
@@ -874,7 +875,7 @@ def firewall_rules(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(action_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server)
     server.disconnect()
     if data_return:
@@ -946,7 +947,7 @@ def docker_build(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(docker_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server, "build", dockerfile, image_tag)
     server.disconnect()
     if data_return:
@@ -995,7 +996,7 @@ def docker_containers(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(docker_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server, action, container)
     server.disconnect()
     if data_return:
@@ -1044,7 +1045,7 @@ def docker_create_containers(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(docker_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server, "create", image, container_name)
     server.disconnect()
     if data_return:
@@ -1093,7 +1094,7 @@ def docker_compose(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(docker_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server, action, compose_yaml)
     server.disconnect()
     if data_return:
@@ -1127,7 +1128,7 @@ def docker_list_images(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(docker_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server, "list-images")
     server.disconnect()
     if data_return:
@@ -1177,7 +1178,7 @@ def docker_list_containers(server_id):
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(docker_path, script_directory)
         server.grant_permission(file_in_server, 700)
-
+    db.close()
     data_return = server.execute_script_in_remote_server(file_in_server, "list-containers")
     server.disconnect()
     if data_return:
