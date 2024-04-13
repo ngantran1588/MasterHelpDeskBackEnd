@@ -885,10 +885,10 @@ def firewall_rules(server_id):
         
         for line in lines:
             if not line.startswith("--"):
-                # Split the line into columns
-                columns = line.split()
+                line = re.sub(r'(?<!\w)\s+(?!\w)', ",", line)
+                columns = line.split(",")
                 if len(columns) >= 3:
-                    if columns[0] == "To":
+                    if columns[0].replace(" ", "") == "To":
                         continue
                     to = columns[0]
                     action = columns[1]
