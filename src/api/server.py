@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 import json
+import re
 from ..database import connector
 from ..database.server import Server 
 from ..database.load_env import LoadDBEnv
@@ -11,6 +12,17 @@ from ..server_management.server_manager import *
 
 server_bp = Blueprint("server", __name__)
 
+def check_permissions(username, server_manager, server_id):
+    if username is None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        return jsonify({"message": "Permission denied"}), 403
+
+    return None
+
+def connect_to_server(server_info):
+    return ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
 @server_bp.route("/add", methods=["POST"])
 @token_required
@@ -370,7 +382,7 @@ def get_server_info(server_id):
         server.grant_permission(file_in_server, 700)
 
     data_return = server.execute_script_in_remote_server(file_in_server)
-    
+    server.disconnect()
     if data_return:
         data = json.loads(data_return)
 
@@ -420,7 +432,7 @@ def get_all_proxy(server_id):
         server.grant_permission(file_in_server, 700)
 
     data_return = server.execute_script_in_remote_server(file_in_server)
-    
+    server.disconnect()
     if data_return:
         data = json.loads(data_return)
         updated_json_str = json.dumps(data)
@@ -480,7 +492,7 @@ def update_proxy(server_id):
         server.grant_permission(file_in_server, 700)
 
     data_return = server.execute_script_in_remote_server(file_in_server, old_domain, old_port, new_domain, new_port)
-    
+    server.disconnect()
     if data_return:
         return data_return, 200
     return jsonify({"message": "Something is wrong"}), 500
@@ -536,7 +548,7 @@ def add_proxy(server_id):
         server.grant_permission(file_in_server, 700)
 
     data_return = server.execute_script_in_remote_server(file_in_server, domain, port)
-    
+    server.disconnect()
     if data_return:
         return data_return, 200
     return jsonify({"message": "Something is wrong"}), 500
@@ -592,7 +604,7 @@ def delete_proxy(server_id):
         server.grant_permission(file_in_server, 700)
 
     data_return = server.execute_script_in_remote_server(file_in_server, domain, port)
-    
+    server.disconnect()
     if data_return:
         return data_return, 200
     return jsonify({"message": "Something is wrong"}), 500
@@ -683,7 +695,7 @@ def install_lib(server_id):
         server.grant_permission(file_in_server, 700)
 
     data_return = server.execute_script_in_remote_server(file_in_server)
-    
+    server.disconnect()
     if data_return:
         return data_return, 200
     return jsonify({"message": "Something is wrong"}), 500
@@ -745,7 +757,7 @@ def uninstall_lib(server_id):
         server.grant_permission(file_in_server, 700)
 
     data_return = server.execute_script_in_remote_server(file_in_server)
-    
+    server.disconnect()
     if data_return:
         return data_return, 200
     return jsonify({"message": "Something is wrong"}), 500
@@ -819,7 +831,7 @@ def firewall_action(server_id):
         server.grant_permission(file_in_server, 700)
 
     data_return = server.execute_script_in_remote_server(file_in_server, arg)
-    
+    server.disconnect()
     if data_return:
         return data_return, 200
     return jsonify({"message": "Something is wrong"}), 500
@@ -864,14 +876,14 @@ def firewall_rules(server_id):
         server.grant_permission(file_in_server, 700)
 
     data_return = server.execute_script_in_remote_server(file_in_server)
-    
+    server.disconnect()
     if data_return:
         # Parse the output
-        lines = data_return.split('\n')
+        lines = data_return.split("\n")
         rules = []
         
         for line in lines:
-            if not line.startswith('--'):
+            if not line.startswith("--"):
                 # Split the line into columns
                 columns = line.split()
                 if len(columns) >= 3:
@@ -879,8 +891,8 @@ def firewall_rules(server_id):
                         continue
                     to = columns[0]
                     action = columns[1]
-                    frm = ' '.join(columns[2:])
-                    rules.append({'to': to, 'action': action, 'from': frm})
+                    frm = " ".join(columns[2:])
+                    rules.append({"to": to, "action": action, "from": frm})
 
         return json.dumps(rules, indent=4), 200
     return jsonify({"message": "Something is wrong"}), 500
@@ -936,7 +948,257 @@ def docker_build(server_id):
         server.grant_permission(file_in_server, 700)
 
     data_return = server.execute_script_in_remote_server(file_in_server, "build", dockerfile, image_tag)
-    
+    server.disconnect()
     if data_return:
         return data_return, 200
+    return jsonify({"message": "Something is wrong"}), 500
+
+@server_bp.route("/docker_containers/<server_id>", methods=["POST"])
+@token_required
+def docker_containers(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+    data = request.json
+
+    container = data.get("container")
+    action = data.get("action")
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+
+    # Connect to the server
+    server.connect()
+    
+    if not container or not action:
+        return jsonify({"message":"No data for container"}, 500)
+
+    docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(docker_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(docker_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+
+    data_return = server.execute_script_in_remote_server(file_in_server, action, container)
+    server.disconnect()
+    if data_return:
+        return data_return, 200
+    return jsonify({"message": "Something is wrong"}), 500
+
+@server_bp.route("/docker_create_containers/<server_id>", methods=["POST"])
+@token_required
+def docker_create_containers(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+    data = request.json
+
+    image = data.get("image")
+    container_name = data.get("container_name")
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+
+    # Connect to the server
+    server.connect()
+    
+    if not image or not container_name:
+        return jsonify({"message":"No data for container"}, 500)
+
+    docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(docker_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(docker_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+
+    data_return = server.execute_script_in_remote_server(file_in_server, "create", image, container_name)
+    server.disconnect()
+    if data_return:
+        return data_return, 200
+    return jsonify({"message": "Something is wrong"}), 500
+
+@server_bp.route("/docker_compose/<server_id>", methods=["POST"])
+@token_required
+def docker_compose(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+    data = request.json
+
+    compose_yaml = data.get("compose_yaml")
+    action = data.get("action")
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+
+    # Connect to the server
+    server.connect()
+    
+    if not compose_yaml:
+        return jsonify({"message":"No data for docker compose"}, 500)
+
+    docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(docker_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(docker_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+
+    data_return = server.execute_script_in_remote_server(file_in_server, action, compose_yaml)
+    server.disconnect()
+    if data_return:
+        return data_return, 200
+    return jsonify({"message": "Something is wrong"}), 500
+
+@server_bp.route("/docker_list_images/<server_id>", methods=["GET"])
+@token_required
+def docker_list_images(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+    permission_check = check_permissions(username, server_manager, server_id)
+    if permission_check:
+        return permission_check
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+    server = connect_to_server(server_info)
+    server.connect()
+    docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+
+    file_name = server.get_file_name(docker_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(docker_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+
+    data_return = server.execute_script_in_remote_server(file_in_server, "list-images")
+    server.disconnect()
+    if data_return:
+        # Parse the output
+        lines = data_return.split("\n")
+        images = []
+        for line in lines:
+            line = re.sub(r'(?<!\w)\s+(?!\w)', ",", line)
+            columns = line.split(",")
+            if len(columns) >= 5 and columns[0].replace(" ", "") != "REPOSITORY":
+                image = {
+                    "repository": columns[0].replace(" ", ""),
+                    "tag": columns[1].replace(" ", ""),
+                    "image_id": columns[2].replace(" ", ""),
+                    "size": columns[4].replace(" ", ""),
+                    "created": columns[3]
+                }
+                
+                images.append(image)
+        return json.dumps(images, indent=4), 200
+    return jsonify({"message": "Something is wrong"}), 500
+
+@server_bp.route("/docker_list_containers/<server_id>", methods=["GET"])
+@token_required
+def docker_list_containers(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+    permission_check = check_permissions(username, server_manager, server_id)
+    if permission_check:
+        return permission_check
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+    server = connect_to_server(server_info)
+    
+    docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(docker_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(docker_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+
+    data_return = server.execute_script_in_remote_server(file_in_server, "list-containers")
+    server.disconnect()
+    if data_return:
+        # Parse the output
+        lines = data_return.split("\n")
+        rules = []
+        
+        for line in lines:
+            line = re.sub(r'(?<!\w)\s+(?!\w)', ",", line)
+            columns = line.split(",")
+            if len(columns) >= 7:
+                if columns[0].replace(" ", "") == "CONTAINER_ID":
+                    continue
+                container_id = columns[0].replace(" ", "")
+                image = columns[1].replace(" ", "")
+                command = columns[2]
+                created = columns[3].replace(" ", "")
+                status = columns[4].replace(" ", "")
+                ports = columns[5]
+                names = columns[6]
+                rules.append({"container_id": container_id, "image": image, "command": command, "created": created, "status": status, "ports": ports, "names": names})
+
+        return json.dumps(rules, indent=4), 200
     return jsonify({"message": "Something is wrong"}), 500
