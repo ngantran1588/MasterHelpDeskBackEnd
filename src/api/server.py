@@ -884,3 +884,59 @@ def firewall_rules(server_id):
 
         return json.dumps(rules, indent=4), 200
     return jsonify({"message": "Something is wrong"}), 500
+
+@server_bp.route("/docker_build/<server_id>", methods=["POST"])
+@token_required
+def docker_build(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+    data = request.json
+
+    dockerfile = data.get("dockerfile")
+    image_tag = data.get("image_tag")
+
+    if not dockerfile or not image_tag:
+        return jsonify({"message":"No data for docker build"}, 500)
+    
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+
+    # Connect to the server
+    server.connect()
+    
+    docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(docker_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(dockerfile):
+        return jsonify({"message": "Please upload folder to server"}), 500
+    
+    dockerfile_path = f"{dockerfile}/Dockerfile"
+    if not server.check_script_exists_on_remote(dockerfile_path):
+        return jsonify({"message": "Please upload Dockerfile to server"}), 500
+    
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(docker_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+
+    data_return = server.execute_script_in_remote_server(file_in_server, "build", dockerfile, image_tag)
+    
+    if data_return:
+        return data_return, 200
+    return jsonify({"message": "Something is wrong"}), 500
