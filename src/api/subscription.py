@@ -22,4 +22,4 @@ def check_subscription_by_username():
     if sub_data:
         return jsonify(sub_data), 200
     else:
-        return jsonify({"message": "Subcription not found"}), 404
+        return jsonify({"message": "Subcription not found"}), 500

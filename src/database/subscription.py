@@ -18,8 +18,8 @@ class Subscription:
             value = (customer_data[0])
             result = self.db.execute_query(query, value)
             
-            if result == 0:
-                return False
-            return True
+            if result:
+                return True
+            return False
         except Exception as e:
             print("Error querying guides:", e)
