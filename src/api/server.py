@@ -520,11 +520,8 @@ def add_proxy(server_id):
     data = request.json
 
     protocol = data["protocol"]
-    detail = data["detail"]
-    input_data = str(detail).split("//")
-    input_data = input_data[1].split(":")
-    domain = input_data[0]
-    port = input_data[1]
+    domain = data["domain"]
+    port = data["port"]
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
@@ -698,7 +695,7 @@ def install_lib(server_id):
     data_return = server.execute_script_in_remote_server(file_in_server)
     server.disconnect()
     if data_return:
-        return data_return, 200
+        return jsonify({"status": data_return}), 200
     return jsonify({"message": "Something is wrong"}), 500
 
 @server_bp.route("/uninstall_lib/<server_id>", methods=["POST"])
@@ -760,7 +757,7 @@ def uninstall_lib(server_id):
     data_return = server.execute_script_in_remote_server(file_in_server)
     server.disconnect()
     if data_return:
-        return data_return, 200
+        return jsonify({"status": data_return}), 200
     return jsonify({"message": "Something is wrong"}), 500
 
 
@@ -1177,6 +1174,59 @@ def docker_list_containers(server_id):
 
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(docker_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+    db.close()
+    data_return = server.execute_script_in_remote_server(file_in_server, "list-containers")
+    server.disconnect()
+    if data_return:
+        # Parse the output
+        lines = data_return.split("\n")
+        rules = []
+        
+        for line in lines:
+            line = re.sub(r'(?<!\w)\s+(?!\w)', ",", line)
+            columns = line.split(",")
+            if len(columns) >= 7:
+                if columns[0].replace(" ", "") == "CONTAINER_ID":
+                    continue
+                container_id = columns[0].replace(" ", "")
+                image = columns[1].replace(" ", "")
+                command = columns[2]
+                created = columns[3].replace(" ", "")
+                status = columns[4].replace(" ", "")
+                ports = columns[5]
+                names = columns[6]
+                rules.append({"container_id": container_id, "image": image, "command": command, "created": created, "status": status, "ports": ports, "names": names})
+
+        return json.dumps(rules, indent=4), 200
+    return jsonify({"message": "Something is wrong"}), 500
+
+@server_bp.route("/execute_code/<server_id>", methods=["POST"])
+@token_required
+def execute_code(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    server_manager = Server(db)
+
+    username = request.jwt_payload.get("username")
+    permission_check = check_permissions(username, server_manager, server_id)
+    if permission_check:
+        return permission_check
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        return jsonify({"message":"No data for server"}, 500)
+
+    server = connect_to_server(server_info)
+    
+    execute_code_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(execute_code_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(execute_code_path, script_directory)
         server.grant_permission(file_in_server, 700)
     db.close()
     data_return = server.execute_script_in_remote_server(file_in_server, "list-containers")
