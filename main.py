@@ -10,27 +10,23 @@ from src.api.subscription import subscription_bp
 import secrets
 from flask_cors import CORS
 
-def create_app():
-    app = Flask(__name__)
-    CORS(app, supports_credentials=True)
-    app.config["SESSION_TYPE"] = "filesystem"
-    app.config["SESSION_SECURE_COOKIE"] = True
-    app.secret_key = secrets.token_hex(32)  
+app = Flask(__name__)
+CORS(app, supports_credentials=True)
+app.config["SESSION_TYPE"] = "filesystem"
+app.config["SESSION_SECURE_COOKIE"] = True
+app.secret_key = secrets.token_hex(32)  
 
-    # Register blueprints
-    app.register_blueprint(auth_bp, url_prefix="/auth")
-    app.register_blueprint(organization_bp, url_prefix="/org")
-    app.register_blueprint(manager_bp, url_prefix="/manager")
-    app.register_blueprint(package_bp, url_prefix="/package")
-    app.register_blueprint(server_bp, url_prefix="/server")
-    app.register_blueprint(guide_bp, url_prefix="/guide")
-    app.register_blueprint(role_bp, url_prefix="/role")
-    app.register_blueprint(subscription_bp, url_prefix="/subscription")
-
-    return app
+# Register blueprints
+app.register_blueprint(auth_bp, url_prefix="/auth")
+app.register_blueprint(organization_bp, url_prefix="/org")
+app.register_blueprint(manager_bp, url_prefix="/manager")
+app.register_blueprint(package_bp, url_prefix="/package")
+app.register_blueprint(server_bp, url_prefix="/server")
+app.register_blueprint(guide_bp, url_prefix="/guide")
+app.register_blueprint(role_bp, url_prefix="/role")
+app.register_blueprint(subscription_bp, url_prefix="/subscription")
 
 if __name__ == "__main__":
-    app = create_app()
     app.run()
 
     # # Replace these with your server details
