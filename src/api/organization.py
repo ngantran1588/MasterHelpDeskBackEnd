@@ -182,14 +182,14 @@ def add_user():
         db.close()
         return jsonify({"message": "Username does not exist"}), 400
     
-    success = org.add_user(organization_id, new_user)
+    success, msg = org.add_user(organization_id, new_user)
 
     db.close()
 
     if success:
-        return jsonify({"message": "User added to organization successfully"}), 200
+        return jsonify({"message": msg}), 200
     else:
-        return jsonify({"message": "Error adding user to organization:"}), 500
+        return jsonify({"message": msg}), 500
 
 @organization_bp.route("/remove_user", methods=["PUT"])
 @token_required
@@ -211,14 +211,14 @@ def remove_user():
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    success = org.remove_user(organization_id, remove_username)
+    success, msg = org.remove_user(organization_id, remove_username)
 
     db.close()
 
     if success:
-        return jsonify({"message": "User removed from organization successfully"}), 200
+        return jsonify({"message": msg}), 200
     else:
-        return jsonify({"message": "Failed to remove user from organization"}), 500
+        return jsonify({"message": msg}), 500
 
 @organization_bp.route("/get_number_of_users/<organization_id>", methods=["GET"])
 @token_required
