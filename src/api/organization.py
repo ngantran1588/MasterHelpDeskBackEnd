@@ -340,3 +340,28 @@ def get_user_in_organization(organization_id):
         return jsonify(users_and_roles), 200
     else:
         return jsonify({"message": "Failed to get users and roles"}), 500
+    
+
+@organization_bp.route("/get_remain_slot", methods=["GET"])
+@token_required
+def get_remain_slot():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    org = Organization(db)
+    auth = Auth(db)
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    if auth.check_role(username) is False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    remain_slot = org.get_remain_slot(username)
+    db.close()
+
+    if remain_slot is not None:
+        return jsonify({"remain_slot": remain_slot}), 200
+    else:
+        return jsonify({"message": "Failed to get remain slot"}), 500    

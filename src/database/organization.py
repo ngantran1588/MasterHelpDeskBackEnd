@@ -216,8 +216,58 @@ class Organization:
         except Exception as e:
             print("Error checking organization name existence:", e)
             return False
-        
+    def get_remain_slot(self, username: str):
+        try:
+            total_slot = self.get_total_slot(username)
+            if not total_slot:
+                print("Error checking organization slot:", e)
+                return False
+            
+            current_slot = self.get_current_slot(username)
+            if not current_slot:
+                print("Error checking organization slot:", e)
+                return False
+            remain_slot = total_slot - current_slot
+            return remain_slot
+        except Exception as e:
+            print("Error checking organization slot:", e)
+            return False
+
     def check_organization_slot(self, username: str):
+        try:
+            total_slot = self.get_total_slot(username)
+            if not total_slot:
+                print("Error checking organization slot:", e)
+                return False
+            
+            current_slot = self.get_current_slot(username)
+            if not current_slot:
+                print("Error checking organization slot:", e)
+                return False
+            
+            return current_slot < total_slot
+        except Exception as e:
+            print("Error checking organization slot:", e)
+            return False
+
+    def get_current_slot(self, username: str):
+        try:
+            # Get customer_id from tbl_customer using username
+            query_customer_id = "SELECT customer_id FROM tbl_customer WHERE username = %s"
+            values_customer_id = (username,)
+            customer_id = self.db.execute_query(query_customer_id, values_customer_id)[0][0]
+
+            # Count current organization for customer_id
+            query_count_org = "SELECT COUNT(*) FROM tbl_organization WHERE customer_id = %s"
+            values_count_org = (customer_id,)
+            current_slot = self.db.execute_query(query_count_org, values_count_org)[0][0]
+
+            return current_slot 
+        except Exception as e:
+            print("Error checking current organization slot:", e)
+            return False
+        
+    def get_total_slot(self, username: str):
         try:
             # Get customer_id from tbl_customer using username
             query_customer_id = "SELECT customer_id FROM tbl_customer WHERE username = %s"
@@ -233,17 +283,12 @@ class Organization:
             query_slot = "SELECT slot_number FROM tbl_package WHERE package_id = %s"
             values_slot = (subscription_type,)
             total_slot = self.db.execute_query(query_slot, values_slot)[0][0]
-
-            # Count current organization for customer_id
-            query_count_org = "SELECT COUNT(*) FROM tbl_organization WHERE customer_id = %s"
-            values_count_org = (customer_id,)
-            current_slot = self.db.execute_query(query_count_org, values_count_org)[0][0]
-
-            return current_slot < total_slot
+            
+            return total_slot 
         except Exception as e:
-            print("Error checking organization slot:", e)
+            print("Error checking total organization slot:", e)
             return False
-
+        
     def get_number_of_users(self, organization_id: str):
         query = "SELECT org_member FROM tbl_organization WHERE organization_id = %s"
         values = (organization_id,)
