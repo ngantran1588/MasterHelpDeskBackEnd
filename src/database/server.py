@@ -321,27 +321,81 @@ class Server:
             print("Error checking user access:", e)
             return False
         
-    def add_user(self, server_id: str, new_user: list[str]) -> bool:
-        query = """ UPDATE tbl_server SET member = array_append(member, %s) WHERE server_id = %s"""
-        values = (new_user, server_id,)
+    def add_user(self, server_id: str, new_user: str) -> bool:
+        # Query to fetch the current member list of the server
+        select_query = "SELECT member FROM tbl_server WHERE server_id = %s"
+        select_values = (server_id,)
+        
         try:
-            self.db.execute_query(query, values)
-            print("User added to server successfully!")
-            return True
-        except Exception as e:
-            print("Error adding user to server:", e)
-            return False
+            # Fetch the current member list from the database
+            current_members = self.db.execute_query(select_query, select_values)
+            if current_members:
+                current_member_list = current_members[0][0]
+                
+                # Check if the new user is already a member of the server
+                if new_user in current_member_list:
+                    print(f"User '{new_user}' already exists in the server.")
+                    return False
+                
+                # Add the new user to the server's member list
+                current_member_list.append(new_user)
 
-    def remove_user(self, server_id: str, remove_username: str) -> bool:
-        query = """UPDATE tbl_server SET member = array_remove(member, %s) WHERE server_id = %s"""
-        values = (remove_username, server_id,)
-        try:
-            self.db.execute_query(query, values)
-            print("User removed from server successfully!")
-            return True
+                # Update the server's member list in the database
+                update_query = "UPDATE tbl_server SET member = %s WHERE server_id = %s"
+                update_values = (current_member_list, server_id)
+                self.db.execute_query(update_query, update_values)
+
+                msg = "Users added to server successfully!"
+                return True, msg
+            else:
+                msg = "server not found."
+                return False, msg
         except Exception as e:
-            print("Error removing user from server:", e)
-            return False
+            msg = f"Error adding user(s) to server: {e}"
+            return False, msg
+   
+    def remove_user(self, server_id: str, remove_username: str) -> bool:
+        try:
+            # Fetch the current member list of the server from the database
+            select_query = "SELECT member FROM tbl_server WHERE server_id = %s"
+            select_values = (server_id,)
+            result = self.db.execute_query(select_query, select_values)
+            
+            if result:
+                member_list = result[0][0]
+                creator_username = member_list[0]
+                
+                # Check if the user to be removed is the creator of the server
+                if remove_username == creator_username:
+                    msg = "Cannot remove the creator of the server."
+                    return False, msg
+                
+                # Check if the member list will have at least one member after removal
+                if len(member_list) == 1:
+                    msg = "Cannot remove the last member of the server."
+                    return False, msg
+                
+                # Check if the user to be removed is in the member list
+                if remove_username not in member_list:
+                    msg = f"User '{remove_username}' is not a member of the server."
+                    return False, msg
+                
+                # Remove the user from the member list
+                member_list.remove(remove_username)
+                
+                # Update the member list in the database
+                update_query = "UPDATE tbl_server SET member = %s WHERE server_id = %s"
+                update_values = (member_list, server_id)
+                self.db.execute_query(update_query, update_values)
+                
+                msg = "User removed from server successfully!"
+                return True, msg
+            else:
+                msg = "server not found."
+                return False, msg
+        except Exception as e:
+            msg = f"Error removing user from server:{e}"
+            return False, msg
         
     def get_info_to_connect(self, server_id: str):
         query = "SELECT hostname, username, password, rsa_key FROM tbl_server WHERE server_id = %s"

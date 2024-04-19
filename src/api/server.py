@@ -308,14 +308,14 @@ def add_user():
     if server.check_user_access(username, server_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    success = server.add_user(server_id, new_user)
+    success, msg = server.add_user(server_id, new_user)
 
     db.close()
 
     if success:
-        return jsonify({"message": "User added to server successfully"}), 200
+        return jsonify({"message": msg}), 200
     else:
-        return jsonify({"message": "Error adding user to server:"}), 500
+        return jsonify({"message": msg}), 500
 
 @server_bp.route("/remove_member", methods=["PUT"])
 @token_required
@@ -337,14 +337,14 @@ def remove_user():
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    success = server.remove_user(server_id, remove_username)
+    success, msg = server.remove_user(server_id, remove_username)
 
     db.close()
 
     if success:
-        return jsonify({"message": "User removed from organization successfully"}), 200
+        return jsonify({"message": msg}), 200
     else:
-        return jsonify({"message": "Failed to remove user from organization"}), 500
+        return jsonify({"message": msg}), 500
 
 @server_bp.route("/get_server_info/<server_id>", methods=["GET"])
 @token_required
