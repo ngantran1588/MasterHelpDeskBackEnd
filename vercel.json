@@ -9,10 +9,5 @@
         "src": "/(.*)",
         "dest": "main.py"
       }
-    ],
-    "git": {
-      "deploymentEnabled": {
-        "staging": false
-      }
-    }
+    ]
   }
