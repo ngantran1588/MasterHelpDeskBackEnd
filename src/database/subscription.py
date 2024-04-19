@@ -23,3 +23,4 @@ class Subscription:
             return False
         except Exception as e:
             print("Error querying guides:", e)
+            return False

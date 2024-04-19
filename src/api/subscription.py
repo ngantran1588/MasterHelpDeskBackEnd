@@ -20,6 +20,6 @@ def check_subscription_by_username():
     db.close()
 
     if sub_data:
-        return jsonify(sub_data), 200
+        return jsonify({"message": "Subcription bought !"}), 200
     else:
         return jsonify({"message": "Subcription not found"}), 500

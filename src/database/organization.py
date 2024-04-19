@@ -129,27 +129,83 @@ class Organization:
             print("Error updating organization information:", e)
             return False
 
-    def add_user(self, organization_id: str, new_user: list[str]) -> bool:
-        query = """ UPDATE tbl_organization SET org_member = array_append(org_member, %s) WHERE organization_id = %s"""
-        values = (new_user, organization_id,)
+    def add_user(self, organization_id: str, new_user: str) -> bool:
+        # Query to fetch the current member list of the organization
+        select_query = "SELECT org_member FROM tbl_organization WHERE organization_id = %s"
+        select_values = (organization_id,)
+        
         try:
-            self.db.execute_query(query, values)
-            print("User added to organization successfully!")
-            return True
+            # Fetch the current member list from the database
+            current_members = self.db.execute_query(select_query, select_values)
+            if current_members:
+                current_member_list = current_members[0][0]
+                
+                # Check if the new user is already a member of the organization
+                if new_user in current_member_list:
+                    print(f"User '{new_user}' already exists in the organization.")
+                    return False
+                
+                # Add the new user to the organization's member list
+                current_member_list.append(new_user)
+
+                # Update the organization's member list in the database
+                update_query = "UPDATE tbl_organization SET org_member = %s WHERE organization_id = %s"
+                update_values = (current_member_list, organization_id)
+                self.db.execute_query(update_query, update_values)
+
+                msg = "Users added to organization successfully!"
+                return True, msg
+            else:
+                msg = "Organization not found."
+                return False, msg
         except Exception as e:
-            print("Error adding user to organization:", e)
-            return False
+            msg = f"Error adding user(s) to organization: {e}"
+            return False, msg
+
 
     def remove_user(self, organization_id: str, remove_username: str) -> bool:
-        query = """UPDATE tbl_organization SET org_member = array_remove(org_member, %s) WHERE organization_id = %s"""
-        values = (remove_username, organization_id,)
         try:
-            self.db.execute_query(query, values)
-            print("User removed from organization successfully!")
-            return True
+            # Fetch the current member list of the organization from the database
+            select_query = "SELECT org_member FROM tbl_organization WHERE organization_id = %s"
+            select_values = (organization_id,)
+            result = self.db.execute_query(select_query, select_values)
+            
+            if result:
+                org_member_list = result[0][0]
+                creator_username = org_member_list[0]
+                
+                # Check if the user to be removed is the creator of the organization
+                if remove_username == creator_username:
+                    msg = "Cannot remove the creator of the organization."
+                    return False, msg
+                
+                # Check if the member list will have at least one member after removal
+                if len(org_member_list) == 1:
+                    msg = "Cannot remove the last member of the organization."
+                    return False, msg
+                
+                # Check if the user to be removed is in the member list
+                if remove_username not in org_member_list:
+                    msg = f"User '{remove_username}' is not a member of the organization."
+                    return False, msg
+                
+                # Remove the user from the member list
+                org_member_list.remove(remove_username)
+                
+                # Update the member list in the database
+                update_query = "UPDATE tbl_organization SET org_member = %s WHERE organization_id = %s"
+                update_values = (org_member_list, organization_id)
+                self.db.execute_query(update_query, update_values)
+                
+                msg = "User removed from organization successfully!"
+                return True, msg
+            else:
+                msg = "Organization not found."
+                return False, msg
         except Exception as e:
-            print("Error removing user from organization:", e)
-            return False
+            msg = f"Error removing user from organization:{e}"
+            return False, msg
+
 
     def check_organization_name_exist(self, name: str) -> bool:
         query = "SELECT COUNT(*) FROM tbl_organization WHERE name = %s"
@@ -160,8 +216,58 @@ class Organization:
         except Exception as e:
             print("Error checking organization name existence:", e)
             return False
-        
+    def get_remain_slot(self, username: str):
+        try:
+            total_slot = self.get_total_slot(username)
+            if not total_slot:
+                print("Error checking organization slot:", e)
+                return False
+            
+            current_slot = self.get_current_slot(username)
+            if not current_slot:
+                print("Error checking organization slot:", e)
+                return False
+            remain_slot = total_slot - current_slot
+            return remain_slot
+        except Exception as e:
+            print("Error checking organization slot:", e)
+            return False
+
     def check_organization_slot(self, username: str):
+        try:
+            total_slot = self.get_total_slot(username)
+            if not total_slot:
+                print("Error checking organization slot:", e)
+                return False
+            
+            current_slot = self.get_current_slot(username)
+            if not current_slot:
+                print("Error checking organization slot:", e)
+                return False
+            
+            return current_slot < total_slot
+        except Exception as e:
+            print("Error checking organization slot:", e)
+            return False
+
+    def get_current_slot(self, username: str):
+        try:
+            # Get customer_id from tbl_customer using username
+            query_customer_id = "SELECT customer_id FROM tbl_customer WHERE username = %s"
+            values_customer_id = (username,)
+            customer_id = self.db.execute_query(query_customer_id, values_customer_id)[0][0]
+
+            # Count current organization for customer_id
+            query_count_org = "SELECT COUNT(*) FROM tbl_organization WHERE customer_id = %s"
+            values_count_org = (customer_id,)
+            current_slot = self.db.execute_query(query_count_org, values_count_org)[0][0]
+
+            return current_slot 
+        except Exception as e:
+            print("Error checking current organization slot:", e)
+            return False
+        
+    def get_total_slot(self, username: str):
         try:
             # Get customer_id from tbl_customer using username
             query_customer_id = "SELECT customer_id FROM tbl_customer WHERE username = %s"
@@ -177,17 +283,12 @@ class Organization:
             query_slot = "SELECT slot_number FROM tbl_package WHERE package_id = %s"
             values_slot = (subscription_type,)
             total_slot = self.db.execute_query(query_slot, values_slot)[0][0]
-
-            # Count current organization for customer_id
-            query_count_org = "SELECT COUNT(*) FROM tbl_organization WHERE customer_id = %s"
-            values_count_org = (customer_id,)
-            current_slot = self.db.execute_query(query_count_org, values_count_org)[0][0]
-
-            return current_slot < total_slot
+            
+            return total_slot 
         except Exception as e:
-            print("Error checking organization slot:", e)
+            print("Error checking total organization slot:", e)
             return False
-
+        
     def get_number_of_users(self, organization_id: str):
         query = "SELECT org_member FROM tbl_organization WHERE organization_id = %s"
         values = (organization_id,)
