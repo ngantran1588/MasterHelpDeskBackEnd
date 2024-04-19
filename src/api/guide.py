@@ -26,6 +26,9 @@ def get_guide(guide_id):
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
         guide = Guide(db)
+
+        if not guide_id:
+            return jsonify({"message": "Guide ID is required."}), 400
         
         guide_data = guide.get_guide_by_id(guide_id)
 
@@ -69,6 +72,9 @@ def update_guide(guide_id):
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
         guide = Guide(db)
+
+        if not guide_id:
+            return jsonify({"message": "Guide ID is required."}), 400
         
         data = request.get_json()
         title = data.get("title")
@@ -94,6 +100,9 @@ def delete_guide(guide_id):
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
         guide = Guide(db)
+
+        if not guide_id:
+            return jsonify({"message": "Guide ID is required."}), 400
         
         success = guide.delete_guide(guide_id)
 

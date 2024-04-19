@@ -347,3 +347,17 @@ class Auth:
         except Exception as e:
             print("Error querying customer:", e)
     
+    def is_inactive_user(self, username: str) -> bool:
+        try:
+            # Check if the user with the given username is inactive
+            query = "SELECT status FROM tbl_customer WHERE username = %s"
+            values = (username,)
+            result = self.db.execute_query(query, values)
+            if result:
+                return result[0][0] == const.STATUS_INACTIVE
+            else:
+                print("User not found.")
+                return False
+        except Exception as e:
+            print("Error checking user status:", e)
+            return False

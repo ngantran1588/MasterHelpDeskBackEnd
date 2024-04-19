@@ -273,17 +273,17 @@ class Server:
             print("Error querying server:", e)
 
     def get_number_server(self, organization_id: str):
-        query = "SELECT server_id FROM tbl_server WHERE organization_id = %s"
+        query = "SELECT COUNT(*) FROM tbl_server WHERE organization_id = %s"
         values = (organization_id,)
         try:
             result = self.db.execute_query(query, values)
-            return len(result[0][0])
+            return result
         except Exception as e:
             print("Error getting server number:", e)
             return False
         
     def get_server_in_organization(self, organization_id: str):
-        query = "SELECT server_id, server_name, status FROM tbl_server WHERE organization_id = %s"
+        query = "SELECT server_id, server_name, hostname status FROM tbl_server WHERE organization_id = %s"
         values = (organization_id,)
         try:
             result = self.db.execute_query(query, values)
@@ -293,6 +293,7 @@ class Server:
                     "server_id": server_info[0],
                     "server_name": server_info[1],
                     "status": server_info[2],
+                    "hostname": server_info[3],
                 }
                 servers.append(server)
             return servers
@@ -428,3 +429,19 @@ class Server:
         except Exception as e:
             print("Error getting server info:", e)
             return False
+        
+    def get_server_members(self, server_id: str) -> list:
+        # Query to fetch the current member list of the server
+        select_query = "SELECT member FROM tbl_server WHERE server_id = %s"
+        select_values = (server_id,)
+
+        try:
+            # Fetch the current member list from the database
+            current_members = self.db.execute_query(select_query, select_values)
+            if current_members:
+                return current_members[0][0]
+            else:
+                return []  # Return an empty list if server not found or no members
+        except Exception as e:
+            print(f"Error fetching server members: {e}")
+            return []
