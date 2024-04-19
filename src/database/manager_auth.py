@@ -43,4 +43,36 @@ class Auth:
             self.db.execute_query(query, values)
             return "Update password successfully", True
         except Exception as e:
-            print("Error changing password:", e)
+            msg = f"Error changing password: {e}"
+            return msg, False
+
+
+    def delete_user(self, username: str) -> bool:
+        try:
+            # Delete the user from the database
+            query = "DELETE FROM tbl_customer WHERE username = %s"
+            values = (username,)
+            self.db.execute_query(query, values)
+            msg = "User deleted successfully!"
+            return msg, True
+        except Exception as e:
+            msg = f"Error deleting user:{e}"
+            return msg, False
+        
+    def change_user_status(self, username: str, new_status: str) -> bool:
+        try:
+            if new_status == "active":
+                status = const.STATUS_ACTIVE
+            elif new_status == "inactive":
+                status = const.STATUS_INACTIVE
+                
+            # Update the status of the user in the database
+            query = "UPDATE tbl_customer SET status = %s WHERE username = %s"
+            values = (status, username)
+            self.db.execute_query(query, values)
+            msg = "User status changed successfully!"
+            return msg, True
+        except Exception as e:
+            msg = f"Error changing user status: {e}"
+            return msg, False
+

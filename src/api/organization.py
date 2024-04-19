@@ -76,6 +76,9 @@ def get_organization_by_id(organization_id):
     db = connector.DBConnector(*db_env)
     org = Organization(db)
 
+    if not organization_id:
+        return jsonify({"message": "Organization ID is required."}), 400
+
     username = request.jwt_payload.get("username")
 
     if username == None:
@@ -227,6 +230,9 @@ def get_number_of_users(organization_id):
     db = connector.DBConnector(*db_env)
     org = Organization(db)
 
+    if not organization_id:
+        return jsonify({"message": "Organization ID is required."}), 400
+
     username = request.jwt_payload.get("username")
 
     if username == None:
@@ -254,6 +260,9 @@ def get_organization_data_by_id(organization_id):
     db = connector.DBConnector(*db_env)
     org = Organization(db)
     auth = Auth(db)
+
+    if not organization_id:
+        return jsonify({"message": "Organization ID is required."}), 400
 
     username = request.jwt_payload.get("username")
 
@@ -287,6 +296,9 @@ def delete_organization(organization_id):
     db = connector.DBConnector(*db_env)
     org = Organization(db)
 
+    if not organization_id:
+        return jsonify({"message": "Organization ID is required."}), 400
+
     username = request.jwt_payload.get("username")
 
     if username is None:
@@ -319,6 +331,9 @@ def get_user_in_organization(organization_id):
     db = connector.DBConnector(*db_env)
     org = Organization(db)
     auth = Auth(db)
+
+    if not organization_id:
+        return jsonify({"message": "Organization ID is required."}), 400
 
     username = request.jwt_payload.get("username")
     if username is None:

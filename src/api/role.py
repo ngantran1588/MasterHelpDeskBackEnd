@@ -26,6 +26,9 @@ def get_role(role_id):
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
         role = Role(db)
+
+        if not role_id:
+            return jsonify({"message": "Role ID is required."}), 400
         
         role_data = role.get_role_by_id(role_id)
 
@@ -69,6 +72,9 @@ def update_role(role_id):
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
         role = Role(db)
+
+        if not role_id:
+            return jsonify({"message": "Role ID is required."}), 400
         
         data = request.get_json()
         role_name = data.get("role_name")
@@ -94,6 +100,9 @@ def delete_role(role_id):
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
         role = Role(db)
+
+        if not role_id:
+            return jsonify({"message": "Role ID is required."}), 400
         
         success = role.delete_role(role_id)
 

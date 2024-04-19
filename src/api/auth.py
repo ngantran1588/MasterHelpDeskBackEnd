@@ -23,7 +23,13 @@ def login():
 
     if not all([username, password]) or username == '' or password == '':
         return jsonify({"message": "Missing required fields"}), 400
-   
+    
+    if not auth.exist_username(username):
+        return jsonify({"message": "Your account is not exist"}), 401
+    
+    if auth.is_inactive_user(username):
+        return jsonify({"message": "Your account is deactivated"}), 401
+
     if auth.login(username, password):
         payload = {"username": username, "exp": datetime.now(timezone.utc) + timedelta(minutes=45)}
         token = jwt.encode(payload, os.environ.get("JWT_SECRET_KEY"), algorithm="HS256")
@@ -168,6 +174,7 @@ def reset_password():
         return response, 200
     else:
         return response, 500
+    
 @auth_bp.route("/change_role_to_superuser", methods=["POST"])
 @token_required
 def change_role_to_superuser():
@@ -210,9 +217,15 @@ def change_role():
     auth = Auth(db)
     data = request.get_json()
     username = request.jwt_payload.get("username")
+   
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     role_id = data["role_id"]
+    username_change = data["username"]
 
-    message, status = auth.change_role(username, role_id)
+    message, status = auth.change_role(username_change, role_id)
 
     if status:
         db.close()
@@ -229,6 +242,10 @@ def check_pass():
     auth = Auth(db)
     data = request.get_json()
     username = request.jwt_payload.get("username")
+   
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
     input_pass = data["password"]
 
     status = auth.check_user_pass(username, input_pass)
@@ -248,6 +265,11 @@ def update_information():
     auth = Auth(db)
     data = request.get_json()
     username = request.jwt_payload.get("username")
+   
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     full_name = data.get("full_name")
     email = data.get("email")
 
@@ -267,6 +289,10 @@ def get_profile():
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
     username = request.jwt_payload.get("username")
+   
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
     
     customer = auth.get_profile(username)
     
@@ -309,6 +335,9 @@ def get_profile_by_id(customer_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     auth = Auth(db)
+
+    if not customer_id:
+        return jsonify({"message": "Customer ID is required."}), 400
     
     username = request.jwt_payload.get("username")
 

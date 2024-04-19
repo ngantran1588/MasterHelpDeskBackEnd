@@ -216,16 +216,17 @@ class Organization:
         except Exception as e:
             print("Error checking organization name existence:", e)
             return False
+        
     def get_remain_slot(self, username: str):
         try:
             total_slot = self.get_total_slot(username)
             if not total_slot:
-                print("Error checking organization slot:", e)
+                print("Error checking remain_slot")
                 return False
             
             current_slot = self.get_current_slot(username)
             if not current_slot:
-                print("Error checking organization slot:", e)
+                print("Error checking remain_slot")
                 return False
             remain_slot = total_slot - current_slot
             return remain_slot
@@ -237,17 +238,17 @@ class Organization:
         try:
             total_slot = self.get_total_slot(username)
             if not total_slot:
-                print("Error checking organization slot:", e)
+                print("Error checking total_slot")
                 return False
             
             current_slot = self.get_current_slot(username)
             if not current_slot:
-                print("Error checking organization slot:", e)
+                print("Error checking total_slot")
                 return False
             
             return current_slot < total_slot
         except Exception as e:
-            print("Error checking organization slot:", e)
+            print("Error checking total_slot:", e)
             return False
 
     def get_current_slot(self, username: str):

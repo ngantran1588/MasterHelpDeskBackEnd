@@ -25,6 +25,9 @@ def get_package_by_id(package_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     package = Package(db)
+
+    if not package_id:
+        return jsonify({"message": "Package ID is required."}), 400
     
     data = package.get_package_by_id(package_id)
 
@@ -72,6 +75,9 @@ def update_package(package_id):
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
         package = Package(db)
+
+        if not package_id:
+            return jsonify({"message": "Package ID is required."}), 400
         
         data = request.get_json()
         package_id = data.get("package_id")
@@ -103,6 +109,9 @@ def delete_package(package_id):
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
         package = Package(db)
+
+        if not package_id:
+            return jsonify({"message": "Package ID is required."}), 400
         
         success = package.delete_package(package_id)
 
