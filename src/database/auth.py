@@ -189,12 +189,13 @@ class Auth:
 
         try:
             result = self.db.execute_query(query, value)
-            user_id, stored_password = result[0]
+            user_id = result[0][0]
+            stored_password = result[0][1]
 
-            if self.compare_passwords(user_id, old_password, stored_password):
+            if self.auth.compare_passwords(user_id, old_password, stored_password):
                 return "Old password is incorrect", False
             
-            new_password = self.encrypt_password(new_password, user_id)
+            new_password = self.auth.encrypt_password(new_password, user_id)
 
             query = "UPDATE tbl_customer SET password = %s WHERE username = %s"
             values = (new_password, username)
@@ -211,7 +212,7 @@ class Auth:
 
         try:
             result = self.db.execute_query(query, value)
-            user_id = result[0]
+            user_id = result[0][0]
             
             new_password = self.auth.encrypt_password(new_password, user_id)
 
@@ -230,7 +231,7 @@ class Auth:
 
         try:
             result = self.db.execute_query(query, value)
-            username = result[0]
+            username = result[0][0]
 
             return username
         except Exception as e:
