@@ -2,11 +2,12 @@ from flask import Blueprint, request, jsonify
 from ..database import connector
 from ..database.auth import Auth
 from ..database.load_env import LoadDBEnv
+from ..database.blacklist_token import BlackListToken
 from datetime import datetime, timedelta, timezone
 import jwt
 import os
 from dotenv import load_dotenv
-from ..decorators import token_required
+from ..decorators import token_required, multiple_tokens_required, multiple_tokens_logout
 
 load_dotenv()
 
@@ -41,10 +42,22 @@ def login():
 
 
 @auth_bp.route("/logout", methods=["POST"])
+@multiple_tokens_logout
 def logout():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    blacklist_token = BlackListToken(db)
     response = jsonify({"message": "Logout successful"})
     response.delete_cookie("access_token")
-    return response, 200
+
+    for payload in request.jwt_payloads:
+        msg, status = blacklist_token.add_to_blacklist(payload)
+        if status == 500:
+            return msg, status
+    
+    msg, status = blacklist_token.remove_expired_tokens()
+    
+    return msg, status
 
 @auth_bp.route("/signup", methods=["POST"])
 def sign_up():
@@ -108,7 +121,7 @@ def verify_otp():
     otp = data["otp"]
 
     if auth.verify_otp(email, otp):
-        payload = {"otp_verified": True, "exp": datetime.now() + timedelta(minutes=10)}
+        payload = {"otp_verified": True, "exp": datetime.now(timezone.utc) + timedelta(minutes=10)}
         token = jwt.encode(payload, os.environ.get("JWT_SECRET_KEY"), algorithm="HS256")
         auth.delete_used_otp(email, otp)
         db.close()
@@ -119,7 +132,7 @@ def verify_otp():
         return jsonify({"message": "OTP verification failed"}), 500
     
 @auth_bp.route("/change_password", methods=["POST"])
-@token_required
+@multiple_tokens_required
 def change_password():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
@@ -128,12 +141,19 @@ def change_password():
     username = data["username"]
     old_password = data["old_password"]
     new_password = data["new_password"]
-
-    otp_verified = request.jwt_payload.get("otp_verified")
+    
+    otp_verified = None
+    username_token = None
+    for payload in request.jwt_payloads:
+        if payload.get("otp_verified"):
+            otp_verified = payload["otp_verified"]
+        if payload.get("username"):
+            username_token = payload["username"]
+    
     if otp_verified != True:
         db.close()
         return jsonify({"message": "Verify OTP first"}), 403
-    username_token = request.jwt_payload.get("username")
+    
     if username != username_token:
         db.close()
         return jsonify({"message": "You don't have permission"}), 403 

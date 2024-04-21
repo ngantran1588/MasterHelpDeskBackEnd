@@ -191,8 +191,7 @@ class Auth:
             result = self.db.execute_query(query, value)
             user_id = result[0][0]
             stored_password = result[0][1]
-
-            if self.auth.compare_passwords(user_id, old_password, stored_password):
+            if not self.auth.compare_passwords(user_id, old_password, stored_password):
                 return "Old password is incorrect", False
             
             new_password = self.auth.encrypt_password(new_password, user_id)
