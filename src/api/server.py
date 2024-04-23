@@ -370,6 +370,7 @@ def remove_user():
         return jsonify({"message": msg}), 500
 
 @server_bp.route("/get_server_members/<server_id>", methods=["GET"])
+@token_required
 def get_server_members(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
