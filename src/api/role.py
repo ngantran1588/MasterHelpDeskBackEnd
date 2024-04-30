@@ -2,6 +2,7 @@ from flask import jsonify, request, Blueprint
 from ..database.load_env import LoadDBEnv
 from ..database.role import Role
 from ..database import connector
+from ..decorators import token_required
 
 role_bp = Blueprint("role", __name__)
 
@@ -42,11 +43,19 @@ def get_role(role_id):
         return jsonify({"error": str(e)}), 500
 
 @role_bp.route("/add", methods=["POST"])
+@token_required
 def add_role():
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
         role = Role(db)
+
+        username = request.jwt_payload.get("manager_username")
+
+        if username == None:
+            db.close()
+            return jsonify({"message": "Permission denied"}), 403
+        
         
         data = request.get_json()
         role_name = data.get("role_name")
@@ -67,6 +76,7 @@ def add_role():
         return jsonify({"error": str(e)}), 500
 
 @role_bp.route("/update/<role_id>", methods=["PUT"])
+@token_required
 def update_role(role_id):
     try:
         db_env = LoadDBEnv.load_db_env()
@@ -100,6 +110,12 @@ def delete_role(role_id):
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
         role = Role(db)
+
+        username = request.jwt_payload.get("manager_username")
+
+        if username == None:
+            db.close()
+            return jsonify({"message": "Permission denied"}), 403
 
         if not role_id:
             return jsonify({"message": "Role ID is required."}), 400

@@ -38,6 +38,7 @@ def logout():
     return response, 200
     
 @manager_bp.route("/delete_user", methods=["DELETE"])
+@token_required
 def delete_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
@@ -61,6 +62,7 @@ def delete_user():
         return jsonify({"error": f"Failed to delete user '{username_delete}'"}), 500
 
 @manager_bp.route("/change_user_status", methods=["PATCH"])
+@token_required
 def change_user_status():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)

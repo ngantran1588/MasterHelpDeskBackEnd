@@ -2,6 +2,7 @@ from flask import jsonify, request, Blueprint
 from ..database.load_env import LoadDBEnv
 from ..database.guide import Guide
 from ..database import connector
+from ..decorators import token_required
 
 guide_bp = Blueprint("guide", __name__)
 
@@ -42,11 +43,18 @@ def get_guide(guide_id):
         return jsonify({"error": str(e)}), 500
 
 @guide_bp.route("/add", methods=["POST"])
+@token_required
 def add_guide():
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
         guide = Guide(db)
+
+        username = request.jwt_payload.get("manager_username")
+
+        if username == None:
+            db.close()
+            return jsonify({"message": "Permission denied"}), 403
         
         data = request.get_json()
         title = data.get("title")
@@ -67,12 +75,19 @@ def add_guide():
         return jsonify({"error": str(e)}), 500
 
 @guide_bp.route("/update/<guide_id>", methods=["PUT"])
+@token_required
 def update_guide(guide_id):
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
         guide = Guide(db)
 
+        username = request.jwt_payload.get("manager_username")
+
+        if username == None:
+            db.close()
+            return jsonify({"message": "Permission denied"}), 403
+        
         if not guide_id:
             return jsonify({"message": "Guide ID is required."}), 400
         
@@ -95,11 +110,18 @@ def update_guide(guide_id):
         return jsonify({"error": str(e)}), 500
 
 @guide_bp.route("/delete/<guide_id>", methods=["DELETE"])
+@token_required
 def delete_guide(guide_id):
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
         guide = Guide(db)
+
+        username = request.jwt_payload.get("manager_username")
+
+        if username == None:
+            db.close()
+            return jsonify({"message": "Permission denied"}), 403
 
         if not guide_id:
             return jsonify({"message": "Guide ID is required."}), 400

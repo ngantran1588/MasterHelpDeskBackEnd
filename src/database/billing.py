@@ -52,17 +52,51 @@ class Billing:
 
     def get_all_billing(self):
         try:
-            query = """SELECT * FROM tbl_billing"""
-            return self.db.execute_query(query)
+            query = """SELECT billing_id, customer_id, subscription_id, timestamp, billing_status, amount FROM tbl_billing"""
+            result = self.db.execute_query(query)
+
+            if len(result) == 0:
+                return None
+            billings = []
+            for billing_info in result:
+                # Extract billings information and create a dictionary
+                billing = {
+                    "billing_id": billing_info[0],
+                    "customer_id": billing_info[1],
+                    "subscription_id": billing_info[2],
+                    "timestamp": billing_info[0],
+                    "billing_status": billing_info[1],
+                    "amount": billing_info[2],
+                }
+                billings.append(billing)
+
+            return billings
         except Exception as e:
             print("Error fetching all billing records:", e)
             return None
 
     def get_billing_by_customer_id(self, customer_id: str):
         try:
-            query = """SELECT * FROM tbl_billing WHERE customer_id = %s"""
+            query = """SELECT billing_id, customer_id, subscription_id, timestamp, billing_status, amount FROM tbl_billing WHERE customer_id = %s"""
             values = (customer_id,)
-            return self.db.execute_query(query, values)
+            result = self.db.execute_query(query, values)
+
+            if len(result) == 0:
+                return None
+            billings = []
+            for billing_info in result:
+                # Extract billings information and create a dictionary
+                billing = {
+                    "billing_id": billing_info[0],
+                    "customer_id": billing_info[1],
+                    "subscription_id": billing_info[2],
+                    "timestamp": billing_info[0],
+                    "billing_status": billing_info[1],
+                    "amount": billing_info[2],
+                }
+                billings.append(billing)
+
+            return billings
         except Exception as e:
             print("Error fetching billing records by customer ID:", e)
             return None
