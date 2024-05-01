@@ -1,20 +1,27 @@
 from flask import jsonify, request, Blueprint
 from ..database.load_env import LoadDBEnv
 from ..database.billing import Billing
+from ..database.auth import Auth
 from ..database import connector
 from ..decorators import token_required
 
 billing_bp = Blueprint("billing", __name__)
-
+# not finished
 @billing_bp.route("/add_billing", methods=["POST"])
 @token_required
 def add_billing():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     billing = Billing(db)
+    auth = Auth(db)
+    
+    username = request.jwt_payload.get("username")
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
     
     data = request.get_json()
-    customer_id = data.get("customer_id")
+    customer_id = auth.get_customer_id_from_username(username)
     subscription_id = data.get("subscription_id")
     amount = data.get("amount")
 
