@@ -1,5 +1,6 @@
 from . import connector
 from datetime import datetime
+from ..const import const
 from ..models.auth import Auth as AuthAPI
 
 class Package:
@@ -44,6 +45,7 @@ class Package:
     def add_package(self, package_name: str, duration: datetime, description: str, slot_number: int, slot_server: int, price: str, status: str):
 
         package_id = self.auth.generate_id(package_name)
+        status = const.STATUS_ACTIVE
 
         query = """INSERT INTO tbl_package (package_id, package_name, duration, description, slot_number, slot_server, price, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
         values = (package_id, package_name, duration, description, slot_number, slot_server, price, status)
@@ -57,7 +59,7 @@ class Package:
             return False
         
     def update_package(self, package_id: str, package_name: str, duration: datetime, description: str, slot_number: int, slot_server: int, price: str, status: str):
-        query = """UPDATE tbl_package SET package_name = %s, duration = %s, description = %s, slot_number = %s, slot_server = %s, price = %s, status = %s, WHERE package_id = %s"""
+        query = """UPDATE tbl_package SET package_name = %s, duration = %s, description = %s, slot_number = %s, slot_server = %s, price = %s, status = %s WHERE package_id = %s"""
         values = (package_name, duration, description, slot_number, slot_server, price, status, package_id)
 
         try:

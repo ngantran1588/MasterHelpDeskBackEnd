@@ -94,7 +94,6 @@ def update_package(package_id):
             return jsonify({"message": "Package ID is required."}), 400
         
         data = request.get_json()
-        package_id = data.get("package_id")
         package_name = data.get("package_name")
         duration = data.get("duration")
         description = data.get("description")
