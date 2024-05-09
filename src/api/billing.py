@@ -6,7 +6,7 @@ from ..database import connector
 from ..decorators import token_required
 
 billing_bp = Blueprint("billing", __name__)
-# not finished
+
 @billing_bp.route("/add_billing", methods=["POST"])
 @token_required
 def add_billing():
@@ -22,16 +22,15 @@ def add_billing():
     
     data = request.get_json()
     customer_id = auth.get_customer_id_from_username(username)
-    subscription_id = data.get("subscription_id")
     amount = data.get("amount")
 
-    if not all([customer_id, subscription_id, amount]):
+    if not all([customer_id, amount]):
         db.close()
         return jsonify({"message": "Missing required data"}), 400
     
-    billing.add_billing(customer_id, subscription_id, amount)
+    billing_id, signature = billing.add_billing(customer_id, amount)
     db.close()
-    return jsonify({"message": "Billing record added successfully"}), 200
+    return jsonify({"message": "Billing record added successfully", "billing_id": billing_id, "signature": signature}), 200
 
 @billing_bp.route("/delete_billing/<billing_id>", methods=["DELETE"])
 @token_required
@@ -39,6 +38,12 @@ def delete_billing(billing_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     billing = Billing(db)
+
+    username = request.jwt_payload.get("manager_username")
+
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
     
     billing.delete_billing(billing_id)
     db.close()
@@ -50,6 +55,11 @@ def update_billing_status(billing_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     billing = Billing(db)
+
+    username = request.jwt_payload.get("username")
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
     
     data = request.get_json()
     new_status = data.get("new_status")
@@ -68,6 +78,11 @@ def get_billing_by_id(billing_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     billing = Billing(db)
+
+    username = request.jwt_payload.get("manager_username")
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
     
     billing_info = billing.get_billing_by_id(billing_id)
     db.close()
@@ -83,6 +98,12 @@ def get_all_billing():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     billing = Billing(db)
+
+    username = request.jwt_payload.get("manager_username")
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     
     all_billing = billing.get_all_billing()
     db.close()
@@ -99,7 +120,7 @@ def get_billing_by_status():
     db = connector.DBConnector(*db_env)
     billing = Billing(db)
 
-    username = request.jwt_payload.get("username")
+    username = request.jwt_payload.get("manager_username")
    
     if username == None:
         return jsonify({"message": "Permission denied"}), 403
@@ -110,6 +131,32 @@ def get_billing_by_status():
         return jsonify({"message": "Status not found"}), 500
     
     billing_info = billing.get_billing_by_status(status)
+    db.close()
+    
+    if billing_info:
+        return jsonify(billing_info), 200
+    else:
+        return jsonify({"message": "Billing record not found"}), 404
+
+@billing_bp.route("/get_billing_status_by_customer_id", methods=["GET"])
+@token_required
+def get_billing_status_by_customer_id():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    billing = Billing(db)
+    auth = Auth(db)
+
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    data = request.get_json()
+    status = data.get(status)
+    if not status:
+        return jsonify({"message": "Status not found"}), 500
+    customer_id = auth.get_customer_id_from_username(username)
+    billing_info = billing.get_billing_status_by_customer_id(status, customer_id)
     db.close()
     
     if billing_info:

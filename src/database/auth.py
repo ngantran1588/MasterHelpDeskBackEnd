@@ -245,7 +245,7 @@ class Auth:
             result = self.db.execute_query(query, value)
             customer_id = result[0][0]
 
-            return username
+            return customer_id
         except Exception as e:
             print("Error get customer_id from username:", e)
 
