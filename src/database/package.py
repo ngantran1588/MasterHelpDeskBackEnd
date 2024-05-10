@@ -81,4 +81,22 @@ class Package:
         except Exception as e:
             print(f"Error deleting package with ID {package_id}:", e)
             return False
+        
+    def get_package_by_amount(self, amount: str):
+        query = "SELECT package_id,package_name,duration FROM tbl_package WHERE price = %s"
+        value = (amount,)
+        try:
+            result = self.db.execute_query(query, value)
+            data = None
+            if result != None:
+                package_info = result[0]
+                data = {
+                    "package_id": package_info[0],
+                    "package_name": package_info[1],
+                    "duration": package_info[2],
+                }
+            return data
+        except Exception as e:
+            print("Error getting package:", e)
+            return None
 

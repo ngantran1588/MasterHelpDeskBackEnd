@@ -40,9 +40,6 @@ requestId = 'lhehHWAt6eaU0LNXId8BEHC_xOguA839KSUvZR5Zc'
 requestType = "captureWallet"
 extraData = ""  # pass empty value or Encode base64 JsonString
 
-# before sign HMAC SHA256 with format: accessKey=$accessKey&amount=$amount&extraData=$extraData&ipnUrl=$ipnUrl
-# &orderId=$orderId&orderInfo=$orderInfo&partnerCode=$partnerCode&redirectUrl=$redirectUrl&requestId=$requestId
-# &requestType=$requestType
 rawSignature = "accessKey=" + accessKey + "&amount=" + amount + "&extraData=" + extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl + "&requestId=" + requestId + "&requestType=" + requestType
 
 # puts raw signature

@@ -121,20 +121,18 @@ class Billing:
 
             if len(result) == 0:
                 return None
-            billings = []
-            for billing_info in result:
-                # Extract billings information and create a dictionary
-                billing = {
-                    "billing_id": billing_info[0],
-                    "customer_id": billing_info[1],
-                    "subscription_id": billing_info[2],
-                    "timestamp": billing_info[3],
-                    "billing_status": billing_info[4],
-                    "amount": billing_info[5],
-                }
-                billings.append(billing)
+            
+            billing_info = result[0]
+            billing = {
+                "billing_id": billing_info[0],
+                "customer_id": billing_info[1],
+                "subscription_id": billing_info[2],
+                "timestamp": billing_info[3],
+                "billing_status": billing_info[4],
+                "amount": billing_info[5],
+            }
 
-            return billings
+            return billing
         except Exception as e:
             print("Error fetching billing record:", e)
             return None
