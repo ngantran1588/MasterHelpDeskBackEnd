@@ -7,6 +7,7 @@ from src.api.server import server_bp
 from src.api.guide import guide_bp
 from src.api.role import role_bp
 from src.api.subscription import subscription_bp
+from src.api.billing import billing_bp
 import secrets
 from flask_cors import CORS
 
@@ -25,6 +26,7 @@ app.register_blueprint(server_bp, url_prefix="/server")
 app.register_blueprint(guide_bp, url_prefix="/guide")
 app.register_blueprint(role_bp, url_prefix="/role")
 app.register_blueprint(subscription_bp, url_prefix="/subscription")
+app.register_blueprint(billing_bp, url_prefix="/billing")
 
 if __name__ == "__main__":
     app.run()
