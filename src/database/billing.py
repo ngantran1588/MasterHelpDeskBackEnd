@@ -65,10 +65,11 @@ class Billing:
 
     def create_signature(secret_key: str, data: dict):
         # Sort the data dictionary by keys and concatenate key-value pairs
-        sorted_values = '&'.join([f"{key}={data[key]}" for key in sorted(data.keys())])
+        sorted_values = "&".join([f"{key}={data[key]}" for key in sorted(data.keys())])
         
         # Create the HMAC-SHA256 signature using the secret key and sorted values
-        signature = hmac.new(secret_key.encode(), sorted_values.encode(), hashlib.sha256).hexdigest()
+        h = hmac.new(bytes(secret_key, "ascii"), bytes(sorted_values, "ascii"), hashlib.sha256)
+        signature = h.hexdigest()
 
         return signature
     
@@ -127,9 +128,9 @@ class Billing:
                     "billing_id": billing_info[0],
                     "customer_id": billing_info[1],
                     "subscription_id": billing_info[2],
-                    "timestamp": billing_info[0],
-                    "billing_status": billing_info[1],
-                    "amount": billing_info[2],
+                    "timestamp": billing_info[3],
+                    "billing_status": billing_info[4],
+                    "amount": billing_info[5],
                 }
                 billings.append(billing)
 
@@ -152,9 +153,9 @@ class Billing:
                     "billing_id": billing_info[0],
                     "customer_id": billing_info[1],
                     "subscription_id": billing_info[2],
-                    "timestamp": billing_info[0],
-                    "billing_status": billing_info[1],
-                    "amount": billing_info[2],
+                    "timestamp": billing_info[3],
+                    "billing_status": billing_info[4],
+                    "amount": billing_info[5],
                 }
                 billings.append(billing)
 
@@ -182,9 +183,9 @@ class Billing:
                     "billing_id": billing_info[0],
                     "customer_id": billing_info[1],
                     "subscription_id": billing_info[2],
-                    "timestamp": billing_info[0],
-                    "billing_status": billing_info[1],
-                    "amount": billing_info[2],
+                    "timestamp": billing_info[3],
+                    "billing_status": billing_info[4],
+                    "amount": billing_info[5],
                 }
                 billings.append(billing)
 
@@ -208,9 +209,9 @@ class Billing:
                     "billing_id": billing_info[0],
                     "customer_id": billing_info[1],
                     "subscription_id": billing_info[2],
-                    "timestamp": billing_info[0],
-                    "billing_status": billing_info[1],
-                    "amount": billing_info[2],
+                    "timestamp": billing_info[3],
+                    "billing_status": billing_info[4],
+                    "amount": billing_info[5],
                 }
                 billings.append(billing)
 
@@ -234,9 +235,9 @@ class Billing:
                     "billing_id": billing_info[0],
                     "customer_id": billing_info[1],
                     "subscription_id": billing_info[2],
-                    "timestamp": billing_info[0],
-                    "billing_status": billing_info[1],
-                    "amount": billing_info[2],
+                    "timestamp": billing_info[3],
+                    "billing_status": billing_info[4],
+                    "amount": billing_info[5],
                 }
                 billings.append(billing)
 
