@@ -17,6 +17,7 @@ auth_bp = Blueprint("auth", __name__)
 def login():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     data = request.get_json()
     username = data.get("username")
@@ -46,6 +47,7 @@ def login():
 def logout():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     blacklist_token = BlackListToken(db)
     response = jsonify({"message": "Logout successful"})
     response.delete_cookie("access_token")
@@ -56,13 +58,14 @@ def logout():
             return msg, status
     
     msg, status = blacklist_token.remove_expired_tokens()
-    
+    db.close()
     return msg, status
 
 @auth_bp.route("/signup", methods=["POST"])
 def sign_up():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     data = request.get_json()
     username = data["username"]
@@ -82,6 +85,7 @@ def sign_up():
 def forgot_password():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     data = request.get_json()
     email = data["email"]
@@ -97,6 +101,7 @@ def forgot_password():
 def resend_otp():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     data = request.get_json()
     email = data["email"]
@@ -115,6 +120,7 @@ def resend_otp():
 def verify_otp():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     data = request.get_json()
     email = data["email"]
@@ -136,6 +142,7 @@ def verify_otp():
 def change_password():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     data = request.get_json()
     username = data["username"]
@@ -174,6 +181,7 @@ def change_password():
 def reset_password():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     data = request.get_json()
     email = data["email"]
@@ -200,6 +208,7 @@ def reset_password():
 def change_role_to_superuser():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     username = request.jwt_payload.get("username")
     
@@ -217,6 +226,7 @@ def change_role_to_superuser():
 def change_role_to_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     username = request.jwt_payload.get("username")
     
@@ -234,6 +244,7 @@ def change_role_to_user():
 def change_role():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     data = request.get_json()
     username = request.jwt_payload.get("username")
@@ -259,6 +270,7 @@ def change_role():
 def check_pass():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     data = request.get_json()
     username = request.jwt_payload.get("username")
@@ -282,6 +294,7 @@ def check_pass():
 def update_information():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     data = request.get_json()
     username = request.jwt_payload.get("username")
@@ -307,6 +320,7 @@ def update_information():
 def get_profile():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     username = request.jwt_payload.get("username")
    
@@ -332,6 +346,7 @@ def get_profile():
 def get_all_profile():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     
     username = request.jwt_payload.get("manager_username")
@@ -354,6 +369,7 @@ def get_all_profile():
 def get_profile_by_id(customer_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
 
     if not customer_id:

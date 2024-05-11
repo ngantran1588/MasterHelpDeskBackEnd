@@ -6,7 +6,6 @@ from ..models.auth import Auth
 class Organization:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
-        self.db.connect()
         self.org = Org()
         self.auth = Auth()
 

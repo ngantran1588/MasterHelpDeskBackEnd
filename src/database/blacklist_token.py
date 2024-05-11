@@ -4,7 +4,6 @@ from . import connector
 class BlackListToken:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
-        self.db.connect()
 
     def add_to_blacklist(self, token: str) -> None:
         current_time = datetime.utcnow()

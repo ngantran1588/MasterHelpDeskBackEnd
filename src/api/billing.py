@@ -17,6 +17,7 @@ billing_bp = Blueprint("billing", __name__)
 def add_billing():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     
     billing = Billing(db)
     auth = Auth(db)
@@ -47,6 +48,7 @@ def add_billing():
 def handle_transaction():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     billing = Billing(db)
     subscription = Subscription(db)
     package = Package(db)
@@ -70,6 +72,7 @@ def handle_transaction():
             subscription_id = subscription.add_subscription(subscription_name, extra_data["customer_id"], package_info["package_id"], expiration_time, False)
             if subscription_id != None:
                 billing.update_success_transaction(billing_id, const.BILLING_STATUS_SUCCESS, subscription_id)
+    db.close()
     return 204
 
 
@@ -78,6 +81,7 @@ def handle_transaction():
 def delete_billing(billing_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     billing = Billing(db)
 
     username = request.jwt_payload.get("manager_username")
@@ -95,6 +99,7 @@ def delete_billing(billing_id):
 def update_billing_status(billing_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     billing = Billing(db)
 
     username = request.jwt_payload.get("username")
@@ -118,6 +123,7 @@ def update_billing_status(billing_id):
 def get_billing_by_id(billing_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     billing = Billing(db)
 
     username = request.jwt_payload.get("manager_username")
@@ -138,6 +144,7 @@ def get_billing_by_id(billing_id):
 def get_all_billing():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     billing = Billing(db)
 
     username = request.jwt_payload.get("manager_username")
@@ -159,6 +166,7 @@ def get_all_billing():
 def get_billing_by_status():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     billing = Billing(db)
 
     username = request.jwt_payload.get("manager_username")
@@ -184,6 +192,7 @@ def get_billing_by_status():
 def get_billing_status_by_customer_id():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     billing = Billing(db)
     auth = Auth(db)
 

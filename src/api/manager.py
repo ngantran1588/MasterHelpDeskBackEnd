@@ -16,6 +16,7 @@ manager_bp = Blueprint('manager', __name__)
 def login():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     data = request.get_json()
     manager_username = data['manager_username']
@@ -42,6 +43,7 @@ def logout():
 def delete_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     
     username = request.jwt_payload.get("manager_username")
@@ -56,6 +58,7 @@ def delete_user():
         return jsonify({"error": "Username not provided"}), 400
     
     deleted = auth.delete_user(username_delete)
+    db.close()
     if deleted:
         return jsonify({"message": f"User '{username_delete}' deleted successfully"}), 200
     else:
@@ -66,6 +69,7 @@ def delete_user():
 def change_user_status():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     auth = Auth(db)
     
     username = request.jwt_payload.get("manager_username")
@@ -81,6 +85,7 @@ def change_user_status():
         return jsonify({"error": "Username and status not provided"}), 400
    
     changed = auth.change_user_status(username_change, new_status)
+    db.close()
     if changed:
         return jsonify({"message": f"User '{username_change}' status changed to '{new_status}'"}), 200
     else:

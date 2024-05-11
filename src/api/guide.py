@@ -10,6 +10,7 @@ guide_bp = Blueprint("guide", __name__)
 def get_guides():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     guide = Guide(db)
     
     guide_data = guide.get_guides()
@@ -26,6 +27,7 @@ def get_guide(guide_id):
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
+        db.connect()
         guide = Guide(db)
 
         if not guide_id:
@@ -48,6 +50,7 @@ def add_guide():
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
+        db.connect()
         guide = Guide(db)
 
         username = request.jwt_payload.get("manager_username")
@@ -80,6 +83,7 @@ def update_guide(guide_id):
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
+        db.connect()
         guide = Guide(db)
 
         username = request.jwt_payload.get("manager_username")
@@ -115,6 +119,7 @@ def delete_guide(guide_id):
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
+        db.connect()
         guide = Guide(db)
 
         username = request.jwt_payload.get("manager_username")

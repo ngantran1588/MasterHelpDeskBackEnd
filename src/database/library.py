@@ -4,7 +4,6 @@ from ..const import const
 class Library:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
-        self.db.connect()
 
     def insert_library(self, server_id: str, library: str, installed: bool):
         query = """INSERT INTO tbl_library (server_id, library, installed) VALUES (%s, %s, %s)"""

@@ -6,7 +6,6 @@ from ..models.auth import Auth as AuthAPI
 class Guide:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
-        self.db.connect()
         self.auth = AuthAPI()
         
     def get_guides(self):
