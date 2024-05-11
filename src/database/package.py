@@ -42,7 +42,7 @@ class Package:
             print("Error getting package:", e)
             return None
         
-    def add_package(self, package_name: str, duration: datetime, description: str, slot_number: int, slot_server: int, price: str, status: str):
+    def add_package(self, package_name: str, duration: int, description: str, slot_number: int, slot_server: int, price: str, status: str):
 
         package_id = self.auth.generate_id(package_name)
         status = const.STATUS_ACTIVE

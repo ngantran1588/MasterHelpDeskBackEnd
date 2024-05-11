@@ -36,8 +36,10 @@ class Subscription:
             values = (subscription_id, subscription_name, customer_id, subscription_type, expiration_date, renewable, subscription_status)
             self.db.execute_query(query, values)
             print("Subscription added successfully.")
+            return subscription_id
         except Exception as e:
             print("Error adding subscription:", e)
+            return None
 
     def update_subscription_status(self, subscription_id: str, new_status: str) -> None:
         try:

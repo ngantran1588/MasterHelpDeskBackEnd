@@ -2,10 +2,10 @@ class Package:
     def __init__(self,
                  package_id: str = None,
                  package_name: str = None,
-                 duration: str = None,
+                 duration: int = None,
                  description: str = None,
-                 slot_number: str = None,
-                 slot_server: str = None,
+                 slot_number: int = None,
+                 slot_server: int = None,
                  price: str = None,
                  status: str = None) -> None:
         self.package_id = package_id

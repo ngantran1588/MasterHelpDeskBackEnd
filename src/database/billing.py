@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+import json
+import requests
 import os
 import hmac
 import hashlib
@@ -25,6 +27,7 @@ class Billing:
             ipn_url = os.environ.get("IPN_URL")
             redirect_url = os.environ.get("REDIRECT_URL")
             partner_code = os.environ.get("MOMO_PARTNER_CODE")
+            endpoint = os.environ.get("MOMO_ENDPOINT")
 
             extra_data = {"customer_id": customer_id}
             extra_data_encode = base64.b64encode(str(extra_data).encode('utf-8'))
@@ -62,8 +65,17 @@ class Billing:
             values = (billing_id, customer_id, subscription_id, timestamp, billing_status, amount, signature)
             self.db.execute_query(query, values)
             print("Billing record added successfully.")
+
+            data = json.dumps(return_data)
+
+            clen = len(data)
+            response = requests.post(endpoint, data=data, headers={'Content-Type': 'application/json', 'Content-Length': str(clen)})
+
+            response_json = response.json()
+            if response_json["resultCode"] != 0:
+                return None
             
-            return return_data
+            return response_json["payUrl"]
         except Exception as e:
             print("Error adding billing record:", e)
             return None

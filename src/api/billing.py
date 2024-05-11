@@ -34,9 +34,14 @@ def add_billing():
         db.close()
         return jsonify({"message": "Missing required data"}), 400
     
-    request_data = billing.add_billing(customer_id, amount)
+    pay_url = billing.add_billing(customer_id, amount)
+
     db.close()
-    return jsonify({"message": "Billing record added successfully", "request_data": request_data}), 200
+
+    if pay_url == None:
+        return jsonify({"message": "Error connecting to momo"}), 500
+
+    return jsonify({"message": "Billing record added successfully", "pay_url": pay_url}), 200
 
 @billing_bp.route("/handle_transaction", methods=["POST"])
 def handle_transaction():
@@ -58,12 +63,13 @@ def handle_transaction():
     extra_data = eval(extra_data)
 
     package_info = package.get_package_by_amount(amount)
-    expiration_time = datetime.now(timezone.utc) + timedelta(days=package_info["duration"])
+    subscription_name = "{} for {} days".format(package_info["package_name"], package_info["duration"])
+    expiration_time = datetime.now(timezone.utc) + timedelta(days=int(package_info["duration"]))
     if billing.check_signature(billing_id, signature):
         if result_code == 0:
-            subscription.add_subscription("sub_name", extra_data["customer_id"], package_info["package_id"], expiration_time, False)
-            billing.update_success_transaction(billing_id, const.BILLING_STATUS_SUCCESS, )
-    
+            subscription_id = subscription.add_subscription(subscription_name, extra_data["customer_id"], package_info["package_id"], expiration_time, False)
+            if subscription_id != None:
+                billing.update_success_transaction(billing_id, const.BILLING_STATUS_SUCCESS, subscription_id)
     return 204
 
 
