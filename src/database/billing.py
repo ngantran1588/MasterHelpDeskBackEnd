@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 import os
 import hmac
 import hashlib
+import base64
 from . import connector
 from ..const import const
 from ..models.auth import Auth as AuthAPI
@@ -24,13 +25,17 @@ class Billing:
             ipn_url = os.environ.get("IPN_URL")
             redirect_url = os.environ.get("REDIRECT_URL")
             partner_code = os.environ.get("MOMO_PARTNER_CODE")
+
+            extra_data = {"customer_id": customer_id}
+            extra_data_encode = base64.b64encode(str(extra_data).encode('utf-8'))
+            extra_data_encode = str(extra_data_encode).replace("b'","").replace("'", "")
             data = {
                 "accessKey": access_key,
                 "amount": amount,
-                "extraData": "",
+                "extraData": extra_data_encode,
                 "ipnUrl": ipn_url,
                 "orderId": billing_id,
-                "orderInfo": customer_id,
+                "orderInfo": "Master Help Desk",
                 "partnerCode": partner_code,
                 "redirectUrl": redirect_url,
                 "requestId": billing_id,
@@ -45,10 +50,10 @@ class Billing:
                 "redirectUrl": redirect_url,
                 "orderId": billing_id,
                 "amount": amount,
-                "lang":  "en",
-                "orderInfo": customer_id,
+                "lang": "en",
+                "orderInfo": "Master Help Desk",
                 "requestId": billing_id,
-                "extraData": "",
+                "extraData": extra_data_encode,
                 "signature": signature
             }
 
