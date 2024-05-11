@@ -1,8 +1,13 @@
 from flask import jsonify, request, Blueprint
+from datetime import datetime, timezone, timedelta
+import base64
 from ..database.load_env import LoadDBEnv
 from ..database.billing import Billing
 from ..database.auth import Auth
+from ..database.package import Package
+from ..database.subscription import Subscription
 from ..database import connector
+from ..const import const
 from ..decorators import token_required
 
 billing_bp = Blueprint("billing", __name__)
@@ -12,6 +17,7 @@ billing_bp = Blueprint("billing", __name__)
 def add_billing():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    
     billing = Billing(db)
     auth = Auth(db)
     
@@ -28,9 +34,38 @@ def add_billing():
         db.close()
         return jsonify({"message": "Missing required data"}), 400
     
-    billing_id, signature = billing.add_billing(customer_id, amount)
+    request_data = billing.add_billing(customer_id, amount)
     db.close()
-    return jsonify({"message": "Billing record added successfully", "billing_id": billing_id, "signature": signature}), 200
+    return jsonify({"message": "Billing record added successfully", "request_data": request_data}), 200
+
+@billing_bp.route("/handle_transaction", methods=["POST"])
+def handle_transaction():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    billing = Billing(db)
+    subscription = Subscription(db)
+    package = Package(db)
+
+    data = request.get_json()
+
+    billing_id = data.get("orderId")
+    result_code = data.get("resultCode")
+    signature = data.get("signature")
+    amount = data.get("amount")
+    extra_data = data.get("extraData")
+
+    extra_data = base64.b64decode(extra_data).decode('utf-8')
+    extra_data = eval(extra_data)
+
+    package_info = package.get_package_by_amount(amount)
+    expiration_time = datetime.now(timezone.utc) + timedelta(days=package_info["duration"])
+    if billing.check_signature(billing_id, signature):
+        if result_code == 0:
+            subscription.add_subscription("sub_name", extra_data["customer_id"], package_info["package_id"], expiration_time, False)
+            billing.update_success_transaction(billing_id, const.BILLING_STATUS_SUCCESS, )
+    
+    return 204
+
 
 @billing_bp.route("/delete_billing/<billing_id>", methods=["DELETE"])
 @token_required
