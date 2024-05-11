@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from . import connector
 from ..const import const
 from ..models.auth import Auth as AuthAPI 
@@ -7,7 +6,6 @@ from ..models.auth import Auth as AuthAPI
 class Auth:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
-        self.db.connect()
         self.auth = AuthAPI()
         
     def login(self, manager_username: str, manager_password: str) -> bool:

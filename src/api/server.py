@@ -17,6 +17,7 @@ server_bp = Blueprint("server", __name__)
 def add_server():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
     auth = Auth(db)
     data = request.get_json()
@@ -66,6 +67,7 @@ def add_server():
 def update_rsa_key(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
@@ -99,9 +101,11 @@ def update_rsa_key(server_id):
 def update_password_key(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"success": False, "message": "Server ID is required."}), 400
 
     username_authen = request.jwt_payload.get("username")
@@ -132,10 +136,12 @@ def update_password_key(server_id):
 def delete_server(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
     username = request.jwt_payload.get("username")
     auth = Auth(db)
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     if username is None:
@@ -163,9 +169,11 @@ def delete_server(server_id):
 def update_server_information(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username_authen = request.jwt_payload.get("username")
@@ -201,6 +209,7 @@ def update_server_information(server_id):
 def get_server_data(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
     username = request.jwt_payload.get("username")
 
@@ -228,10 +237,12 @@ def get_server_data(server_id):
 def get_server_by_id(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
     username = request.jwt_payload.get("username")
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
    
     if username == None:
@@ -255,10 +266,12 @@ def get_server_by_id(server_id):
 def get_number_server(organization_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
     username = request.jwt_payload.get("username")
 
     if not organization_id:
+        db.close()
         return jsonify({"message": "Organization ID is required."}), 400
    
     if username == None:
@@ -278,10 +291,12 @@ def get_number_server(organization_id):
 def get_server_in_organization(organization_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
     username = request.jwt_payload.get("username")
 
     if not organization_id:
+        db.close()
         return jsonify({"message": "Organization ID is required."}), 400
    
     if username == None:
@@ -300,6 +315,7 @@ def get_server_in_organization(organization_id):
 def add_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server = Server(db)
     auth = Auth(db)
 
@@ -333,6 +349,7 @@ def add_user():
 def remove_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server = Server(db)
 
     username = request.jwt_payload.get("username")
@@ -362,21 +379,25 @@ def remove_user():
 def get_server_members(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server = Server(db)
 
     username = request.jwt_payload.get("username")
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     if username is None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if not server.check_user_access(username, server_id):
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     server_members = server.get_server_members(server_id)
-
+    db.close()
     if len(server_members) > 0 :
         return jsonify({"members": server_members}), 200
     return jsonify({"message": "Server not found or there is no member in server"}), 403
@@ -386,14 +407,17 @@ def get_server_members(server_id):
 def get_server_info(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -439,14 +463,17 @@ def get_server_info(server_id):
 def get_all_proxy(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -455,6 +482,7 @@ def get_all_proxy(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
@@ -485,14 +513,17 @@ def get_all_proxy(server_id):
 def update_proxy(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -501,6 +532,7 @@ def update_proxy(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     data = request.json
@@ -546,14 +578,17 @@ def update_proxy(server_id):
 def add_proxy(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -562,6 +597,7 @@ def add_proxy(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     data = request.json
@@ -602,14 +638,17 @@ def add_proxy(server_id):
 def delete_proxy(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -618,6 +657,7 @@ def delete_proxy(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     data = request.json
@@ -661,15 +701,18 @@ def delete_proxy(server_id):
 def lib_status(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
     library_db = Library(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -678,7 +721,7 @@ def lib_status(server_id):
     
     library_list = ["docker", "mongodb", "nginx", "pip", "postgre", "python"]
     return_list = []
-    db.close()
+    
     for library in library_list:
         lib_data = library_db.get_library(server_id, library)
 
@@ -687,6 +730,7 @@ def lib_status(server_id):
             return_list.append({"library": library, "installed": "False"})
         else:
             return_list.append({"library": library, "installed": str(lib_data["installed"])})
+    db.close()
     return return_list, 200
 
 @server_bp.route("/install_lib/<server_id>", methods=["POST"])
@@ -694,15 +738,18 @@ def lib_status(server_id):
 def install_lib(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
     library_db = Library(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -759,15 +806,18 @@ def install_lib(server_id):
 def uninstall_lib(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
     library_db = Library(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -776,6 +826,7 @@ def uninstall_lib(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     data = request.json
@@ -825,14 +876,17 @@ def uninstall_lib(server_id):
 def firewall_action(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -841,6 +895,7 @@ def firewall_action(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     data = request.json
@@ -857,21 +912,25 @@ def firewall_action(server_id):
     if action == "allow_ip":
         action_path = os.environ.get("SCRIPT_PATH_ALLOW_IP")
         if not ip or ip == "":
+            db.close()
             return jsonify({"message":"IP required"}, 500)
         arg = ip
     elif action == "allow_port":
         action_path = os.environ.get("SCRIPT_PATH_ALLOW_PORT")
         if not port or port == "":
+            db.close()
             return jsonify({"message":"Port required"}, 500)
         arg = port
     elif action == "deny_ip":
         action_path = os.environ.get("SCRIPT_PATH_DENY_IP")
         if not ip or ip == "":
+            db.close()
             return jsonify({"message":"IP required"}, 500)
         arg = ip
     elif action == "deny_port":
         action_path = os.environ.get("SCRIPT_PATH_DENY_PORT")
         if not port or port == "":
+            db.close()
             return jsonify({"message":"Port required"}, 500)
         arg = port
     elif action == "enable_firewall":
@@ -901,14 +960,17 @@ def firewall_action(server_id):
 def firewall_rules(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -917,6 +979,7 @@ def firewall_rules(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
@@ -962,14 +1025,17 @@ def firewall_rules(server_id):
 def docker_build(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -978,6 +1044,7 @@ def docker_build(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     data = request.json
@@ -986,6 +1053,7 @@ def docker_build(server_id):
     image_tag = data.get("image_tag")
 
     if not dockerfile or not image_tag:
+        db.close()
         return jsonify({"message":"No data for docker build"}, 500)
     
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
@@ -1000,13 +1068,16 @@ def docker_build(server_id):
     file_in_server = f"{script_directory}/{file_name}"
 
     if not server.check_script_exists_on_remote(dockerfile):
+        db.close()
         return jsonify({"message": "Please upload folder to server"}), 500
     
     dockerfile_path = f"{dockerfile}/Dockerfile"
     if not server.check_script_exists_on_remote(dockerfile_path):
+        db.close()
         return jsonify({"message": "Please upload Dockerfile to server"}), 500
     
     if not server.check_script_exists_on_remote(file_in_server):
+        db.close()
         server.upload_file_to_remote(docker_path, script_directory)
         server.grant_permission(file_in_server, 700)
     db.close()
@@ -1021,14 +1092,17 @@ def docker_build(server_id):
 def docker_containers(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -1037,6 +1111,7 @@ def docker_containers(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     data = request.json
@@ -1073,14 +1148,17 @@ def docker_containers(server_id):
 def docker_create_containers(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -1089,6 +1167,7 @@ def docker_create_containers(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     data = request.json
@@ -1102,6 +1181,7 @@ def docker_create_containers(server_id):
     server.connect()
     
     if not image or not container_name:
+        db.close()
         return jsonify({"message":"No data for container"}, 500)
 
     docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
@@ -1125,14 +1205,17 @@ def docker_create_containers(server_id):
 def docker_compose(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
    
     if username == None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
@@ -1141,6 +1224,7 @@ def docker_compose(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     data = request.json
@@ -1154,6 +1238,7 @@ def docker_compose(server_id):
     server.connect()
     
     if not compose_yaml:
+        db.close()
         return jsonify({"message":"No data for docker compose"}, 500)
 
     docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
@@ -1177,20 +1262,25 @@ def docker_compose(server_id):
 def docker_list_images(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
     if username is None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if not server_manager.check_user_access(username, server_id):
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
@@ -1232,21 +1322,26 @@ def docker_list_images(server_id):
 def docker_list_containers(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
     if username is None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if not server_manager.check_user_access(username, server_id):
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
     
     server_info = server_manager.get_info_to_connect(server_id)
   
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
@@ -1293,20 +1388,25 @@ def docker_list_containers(server_id):
 def execute_code(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     server_manager = Server(db)
 
     if not server_id:
+        db.close()
         return jsonify({"message": "Server ID is required."}), 400
 
     username = request.jwt_payload.get("username")
     if username is None:
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
 
     if not server_manager.check_user_access(username, server_id):
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])

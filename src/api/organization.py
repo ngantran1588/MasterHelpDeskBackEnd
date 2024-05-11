@@ -12,6 +12,7 @@ organization_bp = Blueprint("organization", __name__)
 def add_organization():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     org = Organization(db)
     auth = Auth(db)
 
@@ -52,6 +53,7 @@ def add_organization():
 def get_organization():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     org = Organization(db)
 
     username = request.jwt_payload.get("username")
@@ -74,6 +76,7 @@ def get_organization():
 def get_organization_by_id(organization_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     org = Organization(db)
 
     if not organization_id:
@@ -103,6 +106,7 @@ def get_organization_by_id(organization_id):
 def change_organization_status():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     org = Organization(db)
 
     username = request.jwt_payload.get("username")
@@ -133,6 +137,7 @@ def change_organization_status():
 def update_organization_information():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     org = Organization(db)
 
     username = request.jwt_payload.get("username")
@@ -165,6 +170,7 @@ def update_organization_information():
 def add_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     org = Organization(db)
     auth = Auth(db)
 
@@ -199,6 +205,7 @@ def add_user():
 def remove_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     org = Organization(db)
 
     username = request.jwt_payload.get("username")
@@ -228,6 +235,7 @@ def remove_user():
 def get_number_of_users(organization_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     org = Organization(db)
 
     if not organization_id:
@@ -258,8 +266,8 @@ def get_number_of_users(organization_id):
 def get_organization_data_by_id(organization_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     org = Organization(db)
-    auth = Auth(db)
 
     if not organization_id:
         return jsonify({"message": "Organization ID is required."}), 400
@@ -291,9 +299,11 @@ def get_organization_data_by_id(organization_id):
 def delete_organization(organization_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     org = Organization(db)
 
     if not organization_id:
+        db.close()
         return jsonify({"message": "Organization ID is required."}), 400
 
     username = request.jwt_payload.get("username")
@@ -326,10 +336,12 @@ def delete_organization(organization_id):
 def get_user_in_organization(organization_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     org = Organization(db)
     auth = Auth(db)
 
     if not organization_id:
+        db.close()
         return jsonify({"message": "Organization ID is required."}), 400
 
     username = request.jwt_payload.get("username")
@@ -359,6 +371,7 @@ def get_user_in_organization(organization_id):
 def get_remain_slot():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     org = Organization(db)
     auth = Auth(db)
 

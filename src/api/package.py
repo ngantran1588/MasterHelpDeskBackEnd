@@ -10,6 +10,7 @@ package_bp = Blueprint("package", __name__)
 def get_all_package():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     package = Package(db)
     
     data = package.get_packages()
@@ -25,6 +26,7 @@ def get_all_package():
 def get_package_by_id(package_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     package = Package(db)
 
     if not package_id:
@@ -45,6 +47,7 @@ def add_package():
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
+        db.connect()
         package = Package(db)
         
         username = request.jwt_payload.get("manager_username")
@@ -63,6 +66,7 @@ def add_package():
         status = data.get("status")
 
         if not package_name and not duration and not description and not slot_number and not slot_server and not price and not status:
+            db.close()
             return jsonify({"error": "Fields are missing"}), 400
 
         success = package.add_package(package_name, duration, description, slot_number, slot_server, price, status)
@@ -82,6 +86,7 @@ def update_package(package_id):
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
+        db.connect()
         package = Package(db)
 
         username = request.jwt_payload.get("manager_username")
@@ -91,6 +96,7 @@ def update_package(package_id):
             return jsonify({"message": "Permission denied"}), 403
 
         if not package_id:
+            db.close()
             return jsonify({"message": "Package ID is required."}), 400
         
         data = request.get_json()
@@ -103,6 +109,7 @@ def update_package(package_id):
         status = data.get("status")
 
         if not package_id and not package_name and not duration and not description and not slot_number and not slot_server and not price and not status:
+            db.close()
             return jsonify({"error": "Fields are missing"}), 400
 
         success = package.update_package(package_id, package_name, duration, description, slot_number, slot_server, price, status)
@@ -122,6 +129,7 @@ def delete_package(package_id):
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
+        db.connect()
         package = Package(db)
 
         username = request.jwt_payload.get("manager_username")
@@ -131,6 +139,7 @@ def delete_package(package_id):
             return jsonify({"message": "Permission denied"}), 403
         
         if not package_id:
+            db.close()
             return jsonify({"message": "Package ID is required."}), 400
         
         success = package.delete_package(package_id)

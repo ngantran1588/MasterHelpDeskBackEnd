@@ -10,6 +10,7 @@ role_bp = Blueprint("role", __name__)
 def get_roles():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     role = Role(db)
     
     role_data = role.get_roles()
@@ -26,9 +27,11 @@ def get_role(role_id):
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
+        db.connect()
         role = Role(db)
 
         if not role_id:
+            db.close()
             return jsonify({"message": "Role ID is required."}), 400
         
         role_data = role.get_role_by_id(role_id)
@@ -48,6 +51,7 @@ def add_role():
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
+        db.connect()
         role = Role(db)
 
         username = request.jwt_payload.get("manager_username")
@@ -81,9 +85,11 @@ def update_role(role_id):
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
+        db.connect()
         role = Role(db)
 
         if not role_id:
+            db.close()
             return jsonify({"message": "Role ID is required."}), 400
         
         data = request.get_json()
@@ -109,6 +115,7 @@ def delete_role(role_id):
     try:
         db_env = LoadDBEnv.load_db_env()
         db = connector.DBConnector(*db_env)
+        db.connect()
         role = Role(db)
 
         username = request.jwt_payload.get("manager_username")
@@ -118,6 +125,7 @@ def delete_role(role_id):
             return jsonify({"message": "Permission denied"}), 403
 
         if not role_id:
+            db.close()
             return jsonify({"message": "Role ID is required."}), 400
         
         success = role.delete_role(role_id)
