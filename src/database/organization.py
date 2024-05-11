@@ -237,18 +237,16 @@ class Organization:
     def check_organization_slot(self, username: str):
         try:
             total_slot = self.get_total_slot(username)
-            if not total_slot:
+            if not total_slot and total_slot != 0:
                 print("Error checking total_slot")
                 return False
-            
             current_slot = self.get_current_slot(username)
-            if not current_slot:
-                print("Error checking total_slot")
+            if not current_slot and current_slot != 0:
+                print("Error checking current_slot")
                 return False
-            
             return current_slot < total_slot
         except Exception as e:
-            print("Error checking total_slot:", e)
+            print("Error checking org slot:", e)
             return False
 
     def get_current_slot(self, username: str):
@@ -262,7 +260,7 @@ class Organization:
             query_count_org = "SELECT COUNT(*) FROM tbl_organization WHERE customer_id = %s"
             values_count_org = (customer_id,)
             current_slot = self.db.execute_query(query_count_org, values_count_org)[0][0]
-
+        
             return current_slot 
         except Exception as e:
             print("Error checking current organization slot:", e)
@@ -274,17 +272,14 @@ class Organization:
             query_customer_id = "SELECT customer_id FROM tbl_customer WHERE username = %s"
             values_customer_id = (username,)
             customer_id = self.db.execute_query(query_customer_id, values_customer_id)[0][0]
-
             # Get subscription_type from tbl_subscription
             query_subscription = "SELECT subscription_type FROM tbl_subscription WHERE customer_id = %s"
             values_subscription = (customer_id,)
             subscription_type = self.db.execute_query(query_subscription, values_subscription)[0][0]
-
             # Get slot from tbl_package
             query_slot = "SELECT slot_number FROM tbl_package WHERE package_id = %s"
             values_slot = (subscription_type,)
             total_slot = self.db.execute_query(query_slot, values_slot)[0][0]
-            
             return total_slot 
         except Exception as e:
             print("Error checking total organization slot:", e)

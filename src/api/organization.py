@@ -274,9 +274,6 @@ def get_organization_data_by_id(organization_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    if auth.check_role(username) == False:
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
     try:
         organization_data = org.get_organization_data(organization_id)
         db.close()
