@@ -277,7 +277,7 @@ class Server:
         values = (organization_id,)
         try:
             result = self.db.execute_query(query, values)
-            return result
+            return result[0][0]
         except Exception as e:
             print("Error getting server number:", e)
             return False

@@ -22,7 +22,7 @@ def login():
     manager_password = data['manager_password']
 
     if auth.login(manager_username, manager_password):
-        payload = {"manager_username": manager_username, "exp": datetime.now(timezone.utc) + timedelta(minutes=10)}
+        payload = {"manager_username": manager_username, "exp": datetime.now(timezone.utc) + timedelta(minutes=45)}
         token = jwt.encode(payload, os.environ.get("JWT_SECRET_KEY"), algorithm="HS256")
         db.close()
         return jsonify({"message": "Login successful", "access_token": token}), 200
@@ -38,6 +38,7 @@ def logout():
     return response, 200
     
 @manager_bp.route("/delete_user", methods=["DELETE"])
+@token_required
 def delete_user():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
@@ -61,6 +62,7 @@ def delete_user():
         return jsonify({"error": f"Failed to delete user '{username_delete}'"}), 500
 
 @manager_bp.route("/change_user_status", methods=["PATCH"])
+@token_required
 def change_user_status():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
