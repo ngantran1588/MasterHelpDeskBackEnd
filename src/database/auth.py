@@ -235,6 +235,19 @@ class Auth:
         except Exception as e:
             print("Error get username from email:", e)
 
+    # Get username from customer id
+    def get_username_from_customer_id(self, customer_id: str) -> str:
+        query = "SELECT username from tbl_customer WHERE customer_id = %s"
+        value = (customer_id,)
+
+        try:
+            result = self.db.execute_query(query, value)
+            username = result[0][0]
+
+            return username
+        except Exception as e:
+            print("Error get username from customer_id:", e)
+
     # Get customer id from username
     def get_customer_id_from_username(self, username: str) -> str:
         query = "SELECT customer_id from tbl_customer WHERE username = %s"
