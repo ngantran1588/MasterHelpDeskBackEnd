@@ -68,7 +68,7 @@ class Billing:
             print("Error adding billing record:", e)
             return None
 
-    def create_signature(secret_key: str, data: dict):
+    def create_signature(self, secret_key: str, data: dict):
         # Sort the data dictionary by keys and concatenate key-value pairs
         sorted_values = "&".join([f"{key}={data[key]}" for key in sorted(data.keys())])
         
