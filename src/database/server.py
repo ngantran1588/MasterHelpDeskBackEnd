@@ -6,7 +6,6 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import ast
 from . import connector
 from ..const import const
-import hashlib
 from ..models.server import Server as ServerModel
 from ..models.auth import Auth 
 import os 
@@ -17,7 +16,6 @@ load_dotenv()
 class Server:
     def __init__(self, db: connector.DBConnector):
         self.db = db
-        self.db.connect()
         self.server = ServerModel()
         self.auth = Auth()
 

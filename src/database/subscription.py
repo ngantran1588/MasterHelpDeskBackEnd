@@ -6,7 +6,6 @@ from ..models.auth import Auth as AuthAPI
 class Subscription:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
-        self.db.connect()
         self.auth = AuthAPI()
 
     def check_subscription_by_username(self, username: str) -> bool:

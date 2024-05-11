@@ -12,7 +12,6 @@ from ..models.auth import Auth as AuthAPI
 class Billing:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
-        self.db.connect()
         self.auth = AuthAPI()
 
     def add_billing(self, customer_id: str, amount: float) -> None:

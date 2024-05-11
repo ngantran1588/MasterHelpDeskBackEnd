@@ -10,6 +10,7 @@ subscription_bp = Blueprint("subscription", __name__)
 def check_subscription_by_username():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
+    db.connect()
     sub = Subscription(db)
     
     username = request.jwt_payload.get("username")

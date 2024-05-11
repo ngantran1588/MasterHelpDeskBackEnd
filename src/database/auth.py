@@ -6,7 +6,6 @@ from ..models.auth import Auth as AuthAPI
 class Auth:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
-        self.db.connect()
         self.auth = AuthAPI()
 
     def exist_username(self, username: str) -> bool:

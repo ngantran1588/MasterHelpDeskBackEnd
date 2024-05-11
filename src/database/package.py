@@ -6,7 +6,6 @@ from ..models.auth import Auth as AuthAPI
 class Package:
     def __init__(self, db: connector.DBConnector) -> None:
         self.db = db
-        self.db.connect()
         self.auth = AuthAPI()
 
     def format_package_data(self, package_info):
