@@ -1,10 +1,11 @@
 from flask import Blueprint, request, jsonify
 from ..database import connector
 from ..database.manager_auth import Auth
+from ..database.blacklist_token import BlackListToken
 from ..database.load_env import LoadDBEnv
 import os
 from dotenv import load_dotenv
-from ..decorators import token_required
+from ..decorators import token_required, multiple_tokens_logout
 from datetime import datetime, timedelta, timezone
 import jwt
 
@@ -33,10 +34,23 @@ def login():
 
 
 @manager_bp.route("/logout", methods=["POST"])
+@multiple_tokens_logout
 def logout():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    blacklist_token = BlackListToken(db)
     response = jsonify({"message": "Logout successful"})
     response.delete_cookie("access_token")
-    return response, 200
+
+    for payload in request.jwt_payloads:
+        msg, status = blacklist_token.add_to_blacklist(payload)
+        if status == 500:
+            return msg, status
+    
+    msg, status = blacklist_token.remove_expired_tokens()
+    db.close()
+    return msg, status
     
 @manager_bp.route("/delete_user", methods=["DELETE"])
 @token_required
