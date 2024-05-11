@@ -72,10 +72,10 @@ def handle_transaction():
         if result_code == 0:
             subscription_id = subscription.add_subscription(subscription_name, extra_data["customer_id"], package_info["package_id"], expiration_time, False)
             if subscription_id != None:
-                db.close()
                 username = auth.get_username_from_customer_id(extra_data["customer_id"])
                 auth.change_role_to_superuser(username)
                 billing.update_success_transaction(billing_id, const.BILLING_STATUS_SUCCESS, subscription_id)
+                db.close()
         else:
             db.close()
             billing.update_billing_status(billing_id, const.BILLING_STATUS_FAIL)
