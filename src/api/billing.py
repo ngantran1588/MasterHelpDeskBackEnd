@@ -68,6 +68,7 @@ def handle_transaction():
     package_info = package.get_package_by_amount(amount)
     subscription_name = "{} for {} days".format(package_info["package_name"], package_info["duration"])
     expiration_time = datetime.now(timezone.utc) + timedelta(days=int(package_info["duration"]))
+    print(data)
     if billing.check_signature(billing_id, signature):
         if result_code == 0:
             subscription_id = subscription.add_subscription(subscription_name, extra_data["customer_id"], package_info["package_id"], expiration_time, False)
@@ -76,11 +77,11 @@ def handle_transaction():
                 auth.change_role_to_superuser(username)
                 billing.update_success_transaction(billing_id, const.BILLING_STATUS_SUCCESS, subscription_id)
                 db.close()
+                return jsonify({"message": "Billing successful"}), 204
         else:
             db.close()
             billing.update_billing_status(billing_id, const.BILLING_STATUS_FAIL)
             return jsonify({"message": "Billing failed"}), 500
-    return jsonify({"message": "Billing successful"}), 204
 
 
 @billing_bp.route("/delete_billing/<billing_id>", methods=["DELETE"])
