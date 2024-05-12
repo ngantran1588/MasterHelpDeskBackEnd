@@ -29,6 +29,8 @@ class Billing:
             endpoint = os.environ.get("MOMO_ENDPOINT")
 
             redirect_url = "{}/{}".format(redirect_url, billing_id)
+            print(billing_id)
+            print(redirect_url)
 
             extra_data = {"customer_id": customer_id}
             extra_data_encode = base64.b64encode(str(extra_data).encode('utf-8'))

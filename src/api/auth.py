@@ -389,3 +389,24 @@ def get_profile_by_id(customer_id):
     else:
         db.close()
         return jsonify({"message": "Unauthorized"}), 403
+    
+@auth_bp.route("/check_role", methods=["GET"])
+@token_required
+def check_role():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    auth = Auth(db)
+
+    username = request.jwt_payload.get("username")
+
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    if auth.check_role(username):
+        db.close()
+        return jsonify({"message": "Access granted"}), 200
+    else:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
