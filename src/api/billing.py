@@ -58,7 +58,6 @@ def handle_transaction():
 
     billing_id = data.get("orderId")
     result_code = data.get("resultCode")
-    signature = data.get("signature")
     amount = data.get("amount")
     extra_data = data.get("extraData")
 
@@ -68,21 +67,39 @@ def handle_transaction():
     package_info = package.get_package_by_amount(amount)
     subscription_name = "{} for {} days".format(package_info["package_name"], package_info["duration"])
     expiration_time = datetime.now(timezone.utc) + timedelta(days=int(package_info["duration"]))
-    print(data)
-    if billing.check_signature(billing_id, signature):
-        if result_code == 0:
-            subscription_id = subscription.add_subscription(subscription_name, extra_data["customer_id"], package_info["package_id"], expiration_time, False)
-            if subscription_id != None:
-                username = auth.get_username_from_customer_id(extra_data["customer_id"])
-                auth.change_role_to_superuser(username)
-                billing.update_success_transaction(billing_id, const.BILLING_STATUS_SUCCESS, subscription_id)
-                db.close()
-                return jsonify({"message": "Billing successful"}), 204
-        else:
+    
+    if result_code == 0:
+        subscription_id = subscription.add_subscription(subscription_name, extra_data["customer_id"], package_info["package_id"], expiration_time, False)
+        if subscription_id != None:
+            username = auth.get_username_from_customer_id(extra_data["customer_id"])
+            auth.change_role_to_superuser(username)
+            billing.update_success_transaction(billing_id, const.BILLING_STATUS_SUCCESS, subscription_id)
             db.close()
-            billing.update_billing_status(billing_id, const.BILLING_STATUS_FAIL)
-            return jsonify({"message": "Billing failed"}), 500
+            return jsonify({"message": "Billing successful"}), 204
+    else:
+        billing.update_billing_status(billing_id, const.BILLING_STATUS_FAIL)
+        db.close()
+        return jsonify({"message": "Billing failed"}), 500
 
+@billing_bp.route("/after_transaction/<billing_id>", methods=["POST"])
+@token_required
+def after_transaction(billing_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    billing = Billing(db)
+
+    username = request.jwt_payload.get("username")
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    billing_info = billing.get_billing_by_id(billing_id)
+    db.close()
+    if billing_info == None:
+        return jsonify({"message": "Can not get billing info from db"}), 500
+    else:
+        return jsonify({"billing_info": billing_info}), 200
 
 @billing_bp.route("/delete_billing/<billing_id>", methods=["DELETE"])
 @token_required
