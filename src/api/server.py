@@ -1446,10 +1446,9 @@ def execute_code(server_id):
         return json.dumps(rules, indent=4), 200
     return stderr, 500
 
-# not finish
-@server_bp.route("/report_log/<server_id>", methods=["POST"])
+@server_bp.route("/report_log_syslog/<server_id>", methods=["POST"])
 @token_required
-def report_log(server_id):
+def report_log_syslog(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     db.connect()
@@ -1475,7 +1474,7 @@ def report_log(server_id):
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
     server.connect()
-    execute_code_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
+    execute_code_path = os.environ.get("SCRIPT_PATH_LOG_SYSLOG")
     script_directory = os.environ.get("SERVER_DIRECTORY")
     
     file_name = server.get_file_name(execute_code_path)
@@ -1485,28 +1484,108 @@ def report_log(server_id):
         server.upload_file_to_remote(execute_code_path, script_directory)
         server.grant_permission(file_in_server, 700)
     db.close()
-    data_return, stderr = server.execute_script_in_remote_server(file_in_server, "list-containers")
+    data_return, stderr = server.execute_script_in_remote_server(file_in_server)
     server.disconnect()
     if data_return:
         # Parse the output
         lines = data_return.split("\n")
-        rules = []
+        lines.remove("")
         
-        for line in lines:
-            line = re.sub(r'(?<!\w)\s+(?!\w)', ",", line)
-            columns = line.split(",")
-            if len(columns) >= 7:
-                if columns[0].replace(" ", "") == "CONTAINER_ID":
-                    continue
-                container_id = columns[0].replace(" ", "")
-                image = columns[1].replace(" ", "")
-                command = columns[2]
-                created = columns[3].replace(" ", "")
-                status = columns[4].replace(" ", "")
-                ports = columns[5]
-                names = columns[6]
-                rules.append({"container_id": container_id, "image": image, "command": command, "created": created, "status": status, "ports": ports, "names": names})
-
-        return json.dumps(rules, indent=4), 200
+        return jsonify({"lines": lines}), 200
     return stderr, 500
 
+@server_bp.route("/report_log_last/<server_id>", methods=["POST"])
+@token_required
+def report_log_last(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}, 500)
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+    server.connect()
+    execute_code_path = os.environ.get("SCRIPT_PATH_LOG_LAST")
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(execute_code_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(execute_code_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+    db.close()
+    data_return, stderr = server.execute_script_in_remote_server(file_in_server)
+    server.disconnect()
+    if data_return:
+        # Parse the output
+        lines = data_return.split("\n")
+        lines.remove("")
+        
+        return jsonify({"lines": lines}), 200
+    return stderr, 500
+
+@server_bp.route("/report_log_ufw/<server_id>", methods=["POST"])
+@token_required
+def report_log_ufw(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}, 500)
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+    server.connect()
+    execute_code_path = os.environ.get("SCRIPT_PATH_LOG_UFW")
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(execute_code_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(execute_code_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+    db.close()
+    data_return, stderr = server.execute_script_in_remote_server(file_in_server)
+    server.disconnect()
+    if data_return:
+        # Parse the output
+        lines = data_return.split("\n")
+        lines.remove("")
+        
+        return jsonify({"lines": lines}), 200
+    return stderr, 500
