@@ -61,7 +61,6 @@ def add_server():
     else:
         return jsonify({"message": "Failed to add server"}), 500
 
-
 @server_bp.route("/update_rsa_key/<server_id>", methods=["PUT"])
 @token_required
 def update_rsa_key(server_id):
@@ -870,7 +869,6 @@ def uninstall_lib(server_id):
         return data_return, 200
     return stderr, 500
 
-
 @server_bp.route("/firewall_action/<server_id>", methods=["POST"])
 @token_required
 def firewall_action(server_id):
@@ -1403,6 +1401,14 @@ def execute_code(server_id):
     if not server_manager.check_user_access(username, server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
+
+    data = request.get_json()
+
+    execute_file = data.get("execute_file")
+
+    if not execute_file:
+        db.close()
+        return jsonify({"message":"Execute file is required"}), 500
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
@@ -1411,7 +1417,12 @@ def execute_code(server_id):
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
     server.connect()
-    execute_code_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
+
+    if not server.check_script_exists_on_remote(execute_file):
+        db.close()
+        return jsonify({"message": "File does not exist on server"}), 500
+
+    execute_code_path = os.environ.get("SCRIPT_PATH_EXECUTE_CODE")
     script_directory = os.environ.get("SERVER_DIRECTORY")
     
     file_name = server.get_file_name(execute_code_path)
@@ -1421,30 +1432,19 @@ def execute_code(server_id):
         server.upload_file_to_remote(execute_code_path, script_directory)
         server.grant_permission(file_in_server, 700)
     db.close()
-    data_return, stderr = server.execute_script_in_remote_server(file_in_server, "list-containers")
+    data_return, stderr = server.execute_script_in_remote_server(file_in_server, execute_file)
     server.disconnect()
     if data_return:
         # Parse the output
         lines = data_return.split("\n")
-        rules = []
-        
-        for line in lines:
-            line = re.sub(r'(?<!\w)\s+(?!\w)', ",", line)
-            columns = line.split(",")
-            if len(columns) >= 7:
-                if columns[0].replace(" ", "") == "CONTAINER_ID":
-                    continue
-                container_id = columns[0].replace(" ", "")
-                image = columns[1].replace(" ", "")
-                command = columns[2]
-                created = columns[3].replace(" ", "")
-                status = columns[4].replace(" ", "")
-                ports = columns[5]
-                names = columns[6]
-                rules.append({"container_id": container_id, "image": image, "command": command, "created": created, "status": status, "ports": ports, "names": names})
-
-        return json.dumps(rules, indent=4), 200
-    return stderr, 500
+        lines.remove("")
+    else:
+        lines = None
+    if not stderr and not data_return:
+        return jsonify({"message":"Can not execute code on server"}), 500
+    if stderr:
+        error_messages = [line for line in stderr]
+    return jsonify({"lines": lines, "stderr": error_messages}), 200
 
 @server_bp.route("/report_log_syslog/<server_id>", methods=["POST"])
 @token_required
