@@ -46,6 +46,8 @@ elif [[ "$1" == *".js" ]]; then
     fi
 elif [[ "$1" == *".go" ]]; then
     # Run the Go file using the Go runtime
+    go mod init
+    go mod tidy
     go run "$1"
 else
     echo "Unsupported file type."
