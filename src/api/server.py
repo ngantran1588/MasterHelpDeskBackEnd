@@ -1633,7 +1633,12 @@ def upload_file(server_id):
         db.close()
         return jsonify({"message":"No data for server"}), 500
     data = request.get_json()
-    uploaded_file = request.files['file']
+    
+    try:
+        uploaded_file = request.files['file']  # Access the file from the request
+    except Exception:
+        return jsonify({"message": "Something is wrong with file upload"}), 400
+
     if uploaded_file.filename == '':
         db.close()
         return jsonify({"message":"File must not none"}), 500
