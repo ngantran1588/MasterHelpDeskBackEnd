@@ -1609,6 +1609,11 @@ def report_log_ufw(server_id):
 @server_bp.route("/upload_file/<server_id>", methods=["POST"])
 @token_required
 def upload_file(server_id):
+    try:
+        uploaded_file = request.files['file']  # Access the file from the request
+    except Exception:
+        return jsonify({"message": "Something is wrong with file upload"}), 400
+
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     db.connect()
@@ -1632,12 +1637,7 @@ def upload_file(server_id):
     if server_info == None:
         db.close()
         return jsonify({"message":"No data for server"}), 500
-    data = request.get_json()
-    
-    try:
-        uploaded_file = request.files['file']  # Access the file from the request
-    except Exception:
-        return jsonify({"message": "Something is wrong with file upload"}), 400
+    # data = request.get_json()
 
     if uploaded_file.filename == '':
         db.close()
@@ -1648,7 +1648,8 @@ def upload_file(server_id):
     uploaded_file.save(local_filepath)
 
     # Upload to remote server
-    remote_folder = data.get("remote_folder")
+    # remote_folder = data.get("remote_folder")
+    remote_folder = "/root/test"
 
     if remote_folder == None:
         db.close()
