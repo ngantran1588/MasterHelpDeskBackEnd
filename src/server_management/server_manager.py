@@ -1,11 +1,9 @@
 import paramiko
 from getpass import getpass
 import os
-import subprocess
 import stat
 import zipfile
 import tempfile
-import errno
 
 class ServerManager:
     def __init__(self, hostname, username, password=None, private_key=None):
@@ -80,7 +78,6 @@ class ServerManager:
             print(f"Error in checking script: {e}")
             return False
 
-
     def execute_script(self, script_path, *args):
         try:
             # Open the script file and read the commands
@@ -153,7 +150,7 @@ class ServerManager:
             sftp.put(local_file_path, remote_file_path)
             sftp.close()
 
-            print(f"File '{local_file_path}' uploaded to '{remote_file_path}' successfully.")
+            print(f"File '{local_file_path}' uploaded to '{remote_file_path}' suc cessfully.")
 
         except Exception as e:
             print(f"Error: {e}")

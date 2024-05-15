@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, redirect, url_for
 from datetime import datetime
 import json
 import re
@@ -11,6 +11,10 @@ from ..decorators import token_required
 from ..server_management.server_manager import *
 
 server_bp = Blueprint("server", __name__)
+
+# Function to secure filenames (replace with a robust sanitization function)
+def secure_filename(filename):
+  return filename.replace('\\', '').replace('/', '')
 
 @server_bp.route("/add", methods=["POST"])
 @token_required
@@ -162,7 +166,6 @@ def delete_server(server_id):
     else:
         return jsonify({"message": "Failed to delete server"}), 500
 
-
 @server_bp.route("/update_information/<server_id>", methods=["PUT"])
 @token_required
 def update_server_information(server_id):
@@ -202,7 +205,6 @@ def update_server_information(server_id):
     else:
         return jsonify({"message": "Failed to update server information"}), 500
 
-
 @server_bp.route("/get_server_data/<server_id>", methods=["GET"])
 @token_required
 def get_server_data(server_id):
@@ -229,7 +231,6 @@ def get_server_data(server_id):
         return jsonify(server_data), 200
     else:
         return jsonify({"message": "Server not found"}), 404
-
 
 @server_bp.route("/get_server_by_id/<server_id>", methods=["GET"])
 @token_required
@@ -259,7 +260,6 @@ def get_server_by_id(server_id):
     else:
         return jsonify({"message": "Server not found"}), 404
 
-
 @server_bp.route("/get_number_server/<organization_id>", methods=["GET"])
 @token_required
 def get_number_server(organization_id):
@@ -283,7 +283,6 @@ def get_number_server(organization_id):
         return jsonify({"number_server": number_server}), 200
     else:
         return jsonify({"message": "Failed to retrieve number of servers"}), 500
-
 
 @server_bp.route("/get_server_in_organization/<organization_id>", methods=["GET"])
 @token_required
@@ -455,7 +454,6 @@ def get_server_info(server_id):
         updated_json_str = json.dumps(data)
         return updated_json_str, 200
     return stderr, 500
-
 
 @server_bp.route("/get_all_proxy/<server_id>", methods=["GET"])
 @token_required
@@ -1432,6 +1430,7 @@ def execute_code(server_id):
         server.upload_file_to_remote(execute_code_path, script_directory)
         server.grant_permission(file_in_server, 700)
     db.close()
+    server.grant_permission(execute_file, 700)
     data_return, stderr = server.execute_script_in_remote_server(file_in_server, execute_file)
     server.disconnect()
     if data_return:
@@ -1589,3 +1588,81 @@ def report_log_ufw(server_id):
         
         return jsonify({"lines": lines}), 200
     return stderr, 500
+
+# @app.route('/upload-zip', methods=['POST'])
+# def upload_zip():
+#   if request.method == 'POST':
+#     uploaded_zip = request.files['zip_file']
+#     if uploaded_zip.filename != '':
+#       filename = secure_filename(uploaded_zip.filename)
+#       filepath = os.path.join(UPLOAD_FOLDER, filename)
+#       uploaded_zip.save(filepath)
+
+#       # Unzip the uploaded file
+#       with zipfile.ZipFile(filepath, 'r') as zip_ref:
+#         zip_ref.extractall(UPLOAD_FOLDER)
+
+#       # Handle successful upload and extraction (e.g., return a success message)
+#       return 'Folder structure uploaded and extracted successfully!'
+#   return redirect(url_for('upload_form'))
+
+@server_bp.route("/upload_file/<server_id>", methods=["POST"])
+@token_required
+def upload_file(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+    upload_folder_tmp = os.environ.get("TMP_FOLDER")
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}), 500
+    data = request.get_json()
+    uploaded_file = request.files['file']
+    if uploaded_file.filename == '':
+        db.close()
+        return jsonify({"message":"File must not none"}), 500
+
+    filename = secure_filename(uploaded_file.filename)
+    local_filepath = os.path.join(upload_folder_tmp, filename)
+    uploaded_file.save(local_filepath)
+
+    # Upload to remote server
+    remote_folder = data.get("remote_folder")
+
+    if remote_folder == None:
+        db.close()
+        return jsonify({"message":"Remote folder required"}), 500
+
+    remote_filepath = os.path.join(remote_folder, filename)
+   
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+    server.connect()
+
+    if server.check_script_exists_on_remote(remote_filepath):
+        return jsonify({"message":"File exists on server"}), 500
+    db.close()
+    server.upload_file_to_remote(local_filepath, remote_filepath)
+    server.disconnect()
+    try:
+        os.remove(local_filepath)
+        print(f"Local file deleted: {local_filepath}")
+        return jsonify({"message": "Upload file success"}), 500
+    except OSError as e:
+        print(f"Error deleting local file: {e}")
+        return jsonify({"message": "Upload file failed"}), 500
