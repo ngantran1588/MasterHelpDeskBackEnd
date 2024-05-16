@@ -150,7 +150,7 @@ class ServerManager:
             sftp.put(local_file_path, remote_file_path)
             sftp.close()
 
-            print(f"File '{local_file_path}' uploaded to '{remote_file_path}' suc cessfully.")
+            print(f"File '{local_file_path}' uploaded to '{remote_file_path}' successfully.")
 
         except Exception as e:
             print(f"Error: {e}")

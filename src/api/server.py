@@ -755,17 +755,18 @@ def install_lib(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
-    data = request.json
+    data = request.get_json()
 
     library = data["library"]
 
     lib_data = library_db.update_library(server_id, library, True)
     if not lib_data:
-            return jsonify({"message":"Can not update library"}, 500)
+        return jsonify({"message":"Can not update library"}, 500)
 
-    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"]) 
 
     # Connect to the server
     server.connect()
@@ -1574,7 +1575,7 @@ def report_log_ufw(server_id):
     
     file_name = server.get_file_name(execute_code_path)
     file_in_server = f"{script_directory}/{file_name}"
-
+   
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(execute_code_path, script_directory)
         server.grant_permission(file_in_server, 700)
