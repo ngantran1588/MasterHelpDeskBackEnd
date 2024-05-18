@@ -1652,13 +1652,13 @@ def upload_file(server_id):
     db.close()
     server.upload_file_to_remote(local_filepath, dir)
     server.disconnect()
-    try:
-        os.remove(local_filepath)
-        print(f"Local file deleted: {local_filepath}")
-        return jsonify({"message": "Upload file success"}), 200
-    except OSError as e:
-        print(f"Error deleting local file: {e}")
-        return jsonify({"message": "Upload file failed"}), 500
+    # try:
+    #     os.remove(local_filepath)
+    #     print(f"Local file deleted: {local_filepath}")
+    #     return jsonify({"message": "Upload file success"}), 200
+    # except OSError as e:
+    #     print(f"Error deleting local file: {e}")
+    #     return jsonify({"message": "Upload file failed"}), 500
 
 @server_bp.route("/upload_folder", methods=["POST"])
 def upload_folder():
