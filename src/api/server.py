@@ -7,6 +7,7 @@ from ..database.server import Server
 from ..database.load_env import LoadDBEnv
 from ..database.auth import Auth
 from ..database.library import Library
+from ..const import const
 from ..decorators import token_required
 from ..server_management.server_manager import *
 
@@ -14,7 +15,7 @@ server_bp = Blueprint("server", __name__)
 
 # Function to secure filenames (replace with a robust sanitization function)
 def secure_filename(filename):
-  return filename.replace('\\', '').replace('/', '')
+  return filename.replace("\\", "").replace("/", "")
 
 @server_bp.route("/add", methods=["POST"])
 @token_required
@@ -1004,7 +1005,7 @@ def firewall_rules(server_id):
         
         for line in lines:
             if not line.startswith("--"):
-                line = re.sub(r'(?<!\w)\s+(?!\w)', ",", line)
+                line = re.sub(r"(?<!\w)\s+(?!\w)", ",", line)
                 columns = line.split(",")
                 if len(columns) >= 3:
                     if columns[0].replace(" ", "") == "To":
@@ -1299,7 +1300,7 @@ def docker_list_images(server_id):
         lines = data_return.split("\n")
         images = []
         for line in lines:
-            line = re.sub(r'(?<!\w)\s+(?!\w)', ",", line)
+            line = re.sub(r"(?<!\w)\s+(?!\w)", ",", line)
             columns = line.split(",")
             if len(columns) >= 5 and columns[0].replace(" ", "") != "REPOSITORY":
                 image = {
@@ -1361,7 +1362,7 @@ def docker_list_containers(server_id):
         rules = []
       
         for line in lines:
-            line = re.sub(r'(?<!\w)\s+(?!\w)', ",", line)
+            line = re.sub(r"(?<!\w)\s+(?!\w)", ",", line)
             columns = line.split(",")
             if columns[0].replace(" ", "") == "CONTAINERID" or len(columns) <= 1:
                 continue
@@ -1590,36 +1591,34 @@ def report_log_ufw(server_id):
         return jsonify({"lines": lines}), 200
     return stderr, 500
 
-# @app.route('/upload-zip', methods=['POST'])
-# def upload_zip():
-#   if request.method == 'POST':
-#     uploaded_zip = request.files['zip_file']
-#     if uploaded_zip.filename != '':
-#       filename = secure_filename(uploaded_zip.filename)
-#       filepath = os.path.join(UPLOAD_FOLDER, filename)
-#       uploaded_zip.save(filepath)
-
-#       # Unzip the uploaded file
-#       with zipfile.ZipFile(filepath, 'r') as zip_ref:
-#         zip_ref.extractall(UPLOAD_FOLDER)
-
-#       # Handle successful upload and extraction (e.g., return a success message)
-#       return 'Folder structure uploaded and extracted successfully!'
-#   return redirect(url_for('upload_form'))
-
 @server_bp.route("/upload_file/<server_id>", methods=["POST"])
 @token_required
 def upload_file(server_id):
-    try:
-        uploaded_file = request.files['file']  # Access the file from the request
-    except Exception:
-        return jsonify({"message": "Something is wrong with file upload"}), 400
+    if "file" not in request.files:
+        return jsonify({"message": "No file part"}), 400
+    uploaded_file = request.files["file"]
+    if uploaded_file.filename == "":
+        return jsonify({"message": "No selected file"}), 400
+    if not uploaded_file:
+        return jsonify({"message": "File upload failed"}), 400
+    dir = request.form.get("dir", None)
+    if dir == None:
+        dir = os.environ.get("DEFAULT_FOLDER")
+    filename = uploaded_file.filename
 
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
     upload_folder_tmp = os.environ.get("TMP_FOLDER")
+    
+    try:
+        os.makedirs(upload_folder_tmp)
+    except OSError as e:
+        if "file already exists" in str(e):  # Check for file/folder existence in error message
+            print(f"Folder '{upload_folder_tmp}' already exists.")
+        else:
+            print(f"Error creating folder: {e}")
 
     if not server_id:
         db.close()
@@ -1638,25 +1637,12 @@ def upload_file(server_id):
     if server_info == None:
         db.close()
         return jsonify({"message":"No data for server"}), 500
-    # data = request.get_json()
-
-    if uploaded_file.filename == '':
-        db.close()
-        return jsonify({"message":"File must not none"}), 500
-
-    filename = secure_filename(uploaded_file.filename)
+    
+    filename = secure_filename(filename)
     local_filepath = os.path.join(upload_folder_tmp, filename)
     uploaded_file.save(local_filepath)
 
-    # Upload to remote server
-    # remote_folder = data.get("remote_folder")
-    remote_folder = "/root/test"
-
-    if remote_folder == None:
-        db.close()
-        return jsonify({"message":"Remote folder required"}), 500
-
-    remote_filepath = os.path.join(remote_folder, filename)
+    remote_filepath = os.path.join(dir, filename)
    
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
     server.connect()
@@ -1664,12 +1650,84 @@ def upload_file(server_id):
     if server.check_script_exists_on_remote(remote_filepath):
         return jsonify({"message":"File exists on server"}), 500
     db.close()
-    server.upload_file_to_remote(local_filepath, remote_filepath)
+    server.upload_file_to_remote(local_filepath, dir)
     server.disconnect()
     try:
         os.remove(local_filepath)
         print(f"Local file deleted: {local_filepath}")
-        return jsonify({"message": "Upload file success"}), 500
+        return jsonify({"message": "Upload file success"}), 200
     except OSError as e:
         print(f"Error deleting local file: {e}")
         return jsonify({"message": "Upload file failed"}), 500
+
+@server_bp.route("/upload_folder", methods=["POST"])
+def upload_folder():
+    if "zip_file" not in request.files:
+        return jsonify({"message": "No file part"}), 400
+    uploaded_file = request.files["zip_file"]
+    if uploaded_file.filename == "":
+        return jsonify({"message": "No selected file"}), 400
+    if not uploaded_file:
+        return jsonify({"message": "File upload failed"}), 400
+    dir = request.form.get("dir", None)
+    if dir == None:
+        dir = os.environ.get("DEFAULT_FOLDER")
+    filename = uploaded_file.filename
+
+    # db_env = LoadDBEnv.load_db_env()
+    # db = connector.DBConnector(*db_env)
+    # db.connect()
+    # server_manager = Server(db)
+    upload_folder_tmp = os.environ.get("TMP_FOLDER")
+    
+    try:
+        os.makedirs(upload_folder_tmp)
+    except OSError as e:
+        if "file already exists" in str(e):  # Check for file/folder existence in error message
+            print(f"Folder '{upload_folder_tmp}' already exists.")
+        else:
+            print(f"Error creating folder: {e}")
+
+    # if not server_id:
+    #     db.close()
+    #     return jsonify({"message": "Server ID is required."}), 400
+
+    # username = request.jwt_payload.get("username")
+    # if username is None:
+    #     db.close()
+    #     return jsonify({"message": "Permission denied"}), 403
+
+    # if not server_manager.check_user_access(username, server_id):
+    #     db.close()
+    #     return jsonify({"message": "Permission denied"}), 403
+    
+    # server_info = server_manager.get_info_to_connect(server_id)
+    # if server_info == None:
+    #     db.close()
+    #     return jsonify({"message":"No data for server"}), 500
+    
+    filename = secure_filename(filename)
+    local_filepath = os.path.join(upload_folder_tmp, filename)
+    uploaded_file.save(local_filepath)
+
+    # remote_filepath = os.path.join(dir, filename)
+   
+    # server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+    # server.connect()
+
+    # if server.check_script_exists_on_remote(remote_filepath):
+    #     return jsonify({"message":"File exists on server"}), 500
+    # db.close()
+    # server.upload_file_to_remote(local_filepath, dir)
+    # server.disconnect()
+    # try:
+    #     os.remove(local_filepath)
+    #     print(f"Local file deleted: {local_filepath}")
+    #     return jsonify({"message": "Upload file success"}), 200
+    # except OSError as e:
+    #     print(f"Error deleting local file: {e}")
+    #     return jsonify({"message": "Upload file failed"}), 500
+    
+    # # # Unzip the uploaded file
+    # with zipfile.ZipFile(filepath, "r") as zip_ref:
+    #     zip_ref.extractall(filepath)

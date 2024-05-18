@@ -47,7 +47,7 @@ class ServerManager:
             stderr_data = stderr.read().decode()
             
             # Return stdout and stderr data
-            return stdout_data, stderr
+            return stdout_data, stderr_data
         except Exception as e:
             print(f"Error executing script: {e}")
 
