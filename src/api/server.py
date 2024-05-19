@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, redirect, url_for
 from datetime import datetime
 import json
 import re
+import shutil
 from ..database import connector
 from ..database.server import Server 
 from ..database.load_env import LoadDBEnv
@@ -1652,16 +1653,17 @@ def upload_file(server_id):
     db.close()
     server.upload_file_to_remote(local_filepath, dir)
     server.disconnect()
-    # try:
-    #     os.remove(local_filepath)
-    #     print(f"Local file deleted: {local_filepath}")
-    #     return jsonify({"message": "Upload file success"}), 200
-    # except OSError as e:
-    #     print(f"Error deleting local file: {e}")
-    #     return jsonify({"message": "Upload file failed"}), 500
+    try:
+        os.remove(local_filepath)
+        print(f"Local file deleted: {local_filepath}")
+        return jsonify({"message": "Upload file success"}), 200
+    except OSError as e:
+        print(f"Error deleting local file: {e}")
+        return jsonify({"message": "Upload file failed"}), 500
 
-@server_bp.route("/upload_folder", methods=["POST"])
-def upload_folder():
+@server_bp.route("/upload_folder/<server_id>", methods=["POST"])
+@token_required
+def upload_folder(server_id):
     if "zip_file" not in request.files:
         return jsonify({"message": "No file part"}), 400
     uploaded_file = request.files["zip_file"]
@@ -1674,11 +1676,12 @@ def upload_folder():
         dir = os.environ.get("DEFAULT_FOLDER")
     filename = uploaded_file.filename
 
-    # db_env = LoadDBEnv.load_db_env()
-    # db = connector.DBConnector(*db_env)
-    # db.connect()
-    # server_manager = Server(db)
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
     upload_folder_tmp = os.environ.get("TMP_FOLDER")
+    upload_folder_tmp = os.path.join(upload_folder_tmp, server_id)
     
     try:
         os.makedirs(upload_folder_tmp)
@@ -1688,46 +1691,52 @@ def upload_folder():
         else:
             print(f"Error creating folder: {e}")
 
-    # if not server_id:
-    #     db.close()
-    #     return jsonify({"message": "Server ID is required."}), 400
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
 
-    # username = request.jwt_payload.get("username")
-    # if username is None:
-    #     db.close()
-    #     return jsonify({"message": "Permission denied"}), 403
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
 
-    # if not server_manager.check_user_access(username, server_id):
-    #     db.close()
-    #     return jsonify({"message": "Permission denied"}), 403
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
     
-    # server_info = server_manager.get_info_to_connect(server_id)
-    # if server_info == None:
-    #     db.close()
-    #     return jsonify({"message":"No data for server"}), 500
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}), 500
     
     filename = secure_filename(filename)
     local_filepath = os.path.join(upload_folder_tmp, filename)
     uploaded_file.save(local_filepath)
-
-    # remote_filepath = os.path.join(dir, filename)
+    db.close()
    
-    # server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
-    # server.connect()
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+    server.connect()
 
-    # if server.check_script_exists_on_remote(remote_filepath):
-    #     return jsonify({"message":"File exists on server"}), 500
-    # db.close()
-    # server.upload_file_to_remote(local_filepath, dir)
-    # server.disconnect()
-    # try:
-    #     os.remove(local_filepath)
-    #     print(f"Local file deleted: {local_filepath}")
-    #     return jsonify({"message": "Upload file success"}), 200
-    # except OSError as e:
-    #     print(f"Error deleting local file: {e}")
-    #     return jsonify({"message": "Upload file failed"}), 500
+    extracted_folder = os.path.splitext(filename)[0]
+    remote_filepath = os.path.join(dir, extracted_folder)
+
+    if server.check_script_exists_on_remote(remote_filepath):
+        return jsonify({"message":"Folder exists on server"}), 500
     
-    # # # Unzip the uploaded file
-    # with zipfile.ZipFile(filepath, "r") as zip_ref:
-    #     zip_ref.extractall(filepath)
+    with zipfile.ZipFile(local_filepath, "r") as zip_ref:
+        extract_path = os.path.join(os.path.dirname(local_filepath), extracted_folder)
+        os.makedirs(extract_path, exist_ok=True)
+        zip_ref.extractall(extract_path)
+
+    server.upload_folder(extract_path, dir)
+    server.disconnect()
+    try:
+        os.remove(local_filepath)
+        print(f"Local file deleted: {local_filepath}")
+        shutil.rmtree(extract_path)
+        print(f"Local folder deleted: {extract_path}")
+        return jsonify({"message": "Upload file success"}), 200
+    except OSError as e:
+        print(f"Error deleting local file: {e}")
+        return jsonify({"message": "Upload file failed"}), 500
+    
