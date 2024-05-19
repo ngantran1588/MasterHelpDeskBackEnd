@@ -1,7 +1,9 @@
-from flask import Blueprint, request, jsonify, redirect, url_for
+from flask import Blueprint, request, jsonify, send_file, make_response
 from datetime import datetime
+import base64
 import json
 import re
+import time
 import shutil
 from ..database import connector
 from ..database.server import Server 
@@ -1612,6 +1614,7 @@ def upload_file(server_id):
     db.connect()
     server_manager = Server(db)
     upload_folder_tmp = os.environ.get("TMP_FOLDER")
+    upload_folder_tmp = os.path.join(upload_folder_tmp, server_id)
     
     try:
         os.makedirs(upload_folder_tmp)
@@ -1740,3 +1743,110 @@ def upload_folder(server_id):
         print(f"Error deleting local file: {e}")
         return jsonify({"message": "Upload file failed"}), 500
     
+@server_bp.route("/download_file/<server_id>", methods=["GET"])
+@token_required
+def download_file(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}), 500
+    db.close()
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+    server.connect()
+
+    file_path_encoded = request.args.get("file")
+    file_path = base64.b64decode(file_path_encoded).decode('utf-8')
+    if file_path == None:
+        db.close()
+        return jsonify({"messsage": "File path is required"}), 500
+    file_path = str(file_path)
+   
+    if not server.check_script_exists_on_remote(file_path) :
+        db.close()
+        return jsonify({"messsage": "File path does not exist"}), 500
+    
+    local_file_path = os.environ.get("TMP_FOLDER")
+    local_file_path = os.path.join(local_file_path, server_id)
+
+    try:
+        os.makedirs(local_file_path)
+    except OSError as e:
+        if "file already exists" in str(e):  # Check for file/folder existence in error message
+            print(f"Folder '{local_file_path}' already exists.")
+        else:
+            print(f"Error creating folder: {e}")
+   
+    server.download_file_from_remote(file_path, local_file_path)
+    filename = os.path.basename(file_path)
+    local_file_path = os.path.join(local_file_path, filename)
+
+    server.disconnect()
+    
+    response = make_response(send_file(local_file_path, mimetype="application/octet-stream", as_attachment=True, download_name=filename))    
+    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
+    
+    return response, 200
+
+@server_bp.route("/confirm_download_file/<server_id>", methods=["POST"])
+@token_required
+def download_file(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}), 500
+    db.close()
+
+    data = request.get_json()
+    filename = data.get("filename", None)
+    if filename == None:
+        return jsonify({"message": "File name is required."}), 400
+    
+    local_file_path = os.environ.get("TMP_FOLDER")
+    local_file_path = os.path.join(local_file_path, server_id, filename)
+
+    try:
+        os.remove(local_file_path)
+        print(f"Local file deleted: {local_file_path}")
+        return jsonify({"message": "Upload file success"}), 200
+    except OSError as e:
+        print(f"Error deleting local file: {e}")
+        return jsonify({"message": "Upload file failed"}), 500
+
