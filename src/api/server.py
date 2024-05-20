@@ -1,16 +1,24 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file, make_response
 from datetime import datetime
+import base64
 import json
 import re
+import time
+import shutil
 from ..database import connector
 from ..database.server import Server 
 from ..database.load_env import LoadDBEnv
 from ..database.auth import Auth
 from ..database.library import Library
+from ..const import const
 from ..decorators import token_required
 from ..server_management.server_manager import *
 
 server_bp = Blueprint("server", __name__)
+
+# Function to secure filenames (replace with a robust sanitization function)
+def secure_filename(filename):
+  return filename.replace("\\", "").replace("/", "")
 
 @server_bp.route("/add", methods=["POST"])
 @token_required
@@ -162,7 +170,6 @@ def delete_server(server_id):
     else:
         return jsonify({"message": "Failed to delete server"}), 500
 
-
 @server_bp.route("/update_information/<server_id>", methods=["PUT"])
 @token_required
 def update_server_information(server_id):
@@ -202,7 +209,6 @@ def update_server_information(server_id):
     else:
         return jsonify({"message": "Failed to update server information"}), 500
 
-
 @server_bp.route("/get_server_data/<server_id>", methods=["GET"])
 @token_required
 def get_server_data(server_id):
@@ -229,7 +235,6 @@ def get_server_data(server_id):
         return jsonify(server_data), 200
     else:
         return jsonify({"message": "Server not found"}), 404
-
 
 @server_bp.route("/get_server_by_id/<server_id>", methods=["GET"])
 @token_required
@@ -259,7 +264,6 @@ def get_server_by_id(server_id):
     else:
         return jsonify({"message": "Server not found"}), 404
 
-
 @server_bp.route("/get_number_server/<organization_id>", methods=["GET"])
 @token_required
 def get_number_server(organization_id):
@@ -283,7 +287,6 @@ def get_number_server(organization_id):
         return jsonify({"number_server": number_server}), 200
     else:
         return jsonify({"message": "Failed to retrieve number of servers"}), 500
-
 
 @server_bp.route("/get_server_in_organization/<organization_id>", methods=["GET"])
 @token_required
@@ -455,7 +458,6 @@ def get_server_info(server_id):
         updated_json_str = json.dumps(data)
         return updated_json_str, 200
     return stderr, 500
-
 
 @server_bp.route("/get_all_proxy/<server_id>", methods=["GET"])
 @token_required
@@ -757,17 +759,18 @@ def install_lib(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
+        db.close()
         return jsonify({"message":"No data for server"}, 500)
 
-    data = request.json
+    data = request.get_json()
 
     library = data["library"]
 
     lib_data = library_db.update_library(server_id, library, True)
     if not lib_data:
-            return jsonify({"message":"Can not update library"}, 500)
+        return jsonify({"message":"Can not update library"}, 500)
 
-    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"]) 
 
     # Connect to the server
     server.connect()
@@ -1005,7 +1008,7 @@ def firewall_rules(server_id):
         
         for line in lines:
             if not line.startswith("--"):
-                line = re.sub(r'(?<!\w)\s+(?!\w)', ",", line)
+                line = re.sub(r"(?<!\w)\s+(?!\w)", ",", line)
                 columns = line.split(",")
                 if len(columns) >= 3:
                     if columns[0].replace(" ", "") == "To":
@@ -1300,7 +1303,7 @@ def docker_list_images(server_id):
         lines = data_return.split("\n")
         images = []
         for line in lines:
-            line = re.sub(r'(?<!\w)\s+(?!\w)', ",", line)
+            line = re.sub(r"(?<!\w)\s+(?!\w)", ",", line)
             columns = line.split(",")
             if len(columns) >= 5 and columns[0].replace(" ", "") != "REPOSITORY":
                 image = {
@@ -1362,7 +1365,7 @@ def docker_list_containers(server_id):
         rules = []
       
         for line in lines:
-            line = re.sub(r'(?<!\w)\s+(?!\w)', ",", line)
+            line = re.sub(r"(?<!\w)\s+(?!\w)", ",", line)
             columns = line.split(",")
             if columns[0].replace(" ", "") == "CONTAINERID" or len(columns) <= 1:
                 continue
@@ -1432,6 +1435,7 @@ def execute_code(server_id):
         server.upload_file_to_remote(execute_code_path, script_directory)
         server.grant_permission(file_in_server, 700)
     db.close()
+    server.grant_permission(execute_file, 700)
     data_return, stderr = server.execute_script_in_remote_server(file_in_server, execute_file)
     server.disconnect()
     if data_return:
@@ -1575,7 +1579,7 @@ def report_log_ufw(server_id):
     
     file_name = server.get_file_name(execute_code_path)
     file_in_server = f"{script_directory}/{file_name}"
-
+   
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(execute_code_path, script_directory)
         server.grant_permission(file_in_server, 700)
@@ -1589,3 +1593,325 @@ def report_log_ufw(server_id):
         
         return jsonify({"lines": lines}), 200
     return stderr, 500
+
+@server_bp.route("/upload_file/<server_id>", methods=["POST"])
+@token_required
+def upload_file(server_id):
+    if "file" not in request.files:
+        return jsonify({"message": "No file part"}), 400
+    uploaded_file = request.files["file"]
+    if uploaded_file.filename == "":
+        return jsonify({"message": "No selected file"}), 400
+    if not uploaded_file:
+        return jsonify({"message": "File upload failed"}), 400
+    dir = request.form.get("dir", None)
+    if dir == None:
+        dir = os.environ.get("DEFAULT_FOLDER")
+    filename = uploaded_file.filename
+
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+    upload_folder_tmp = os.environ.get("TMP_FOLDER")
+    upload_folder_tmp = os.path.join(upload_folder_tmp, server_id)
+    
+    try:
+        os.makedirs(upload_folder_tmp)
+    except OSError as e:
+        if "file already exists" in str(e):  # Check for file/folder existence in error message
+            print(f"Folder '{upload_folder_tmp}' already exists.")
+        else:
+            print(f"Error creating folder: {e}")
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}), 500
+    
+    filename = secure_filename(filename)
+    local_filepath = os.path.join(upload_folder_tmp, filename)
+    uploaded_file.save(local_filepath)
+
+    remote_filepath = os.path.join(dir, filename)
+   
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+    server.connect()
+
+    if server.check_script_exists_on_remote(remote_filepath):
+        return jsonify({"message":"File exists on server"}), 500
+    db.close()
+    server.upload_file_to_remote(local_filepath, dir)
+    server.disconnect()
+    try:
+        os.remove(local_filepath)
+        print(f"Local file deleted: {local_filepath}")
+        return jsonify({"message": "Upload file success"}), 200
+    except OSError as e:
+        print(f"Error deleting local file: {e}")
+        return jsonify({"message": "Upload file failed"}), 500
+
+@server_bp.route("/upload_folder/<server_id>", methods=["POST"])
+@token_required
+def upload_folder(server_id):
+    if "zip_file" not in request.files:
+        return jsonify({"message": "No file part"}), 400
+    uploaded_file = request.files["zip_file"]
+    if uploaded_file.filename == "":
+        return jsonify({"message": "No selected file"}), 400
+    if not uploaded_file:
+        return jsonify({"message": "File upload failed"}), 400
+    dir = request.form.get("dir", None)
+    if dir == None:
+        dir = os.environ.get("DEFAULT_FOLDER")
+    filename = uploaded_file.filename
+
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+    upload_folder_tmp = os.environ.get("TMP_FOLDER")
+    upload_folder_tmp = os.path.join(upload_folder_tmp, server_id)
+    
+    try:
+        os.makedirs(upload_folder_tmp)
+    except OSError as e:
+        if "file already exists" in str(e):  # Check for file/folder existence in error message
+            print(f"Folder '{upload_folder_tmp}' already exists.")
+        else:
+            print(f"Error creating folder: {e}")
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}), 500
+    
+    filename = secure_filename(filename)
+    local_filepath = os.path.join(upload_folder_tmp, filename)
+    uploaded_file.save(local_filepath)
+    db.close()
+   
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+    server.connect()
+
+    extracted_folder = os.path.splitext(filename)[0]
+    remote_filepath = os.path.join(dir, extracted_folder)
+
+    if server.check_script_exists_on_remote(remote_filepath):
+        return jsonify({"message":"Folder exists on server"}), 500
+    
+    with zipfile.ZipFile(local_filepath, "r") as zip_ref:
+        extract_path = os.path.join(os.path.dirname(local_filepath), extracted_folder)
+        os.makedirs(extract_path, exist_ok=True)
+        zip_ref.extractall(extract_path)
+
+    server.upload_folder(extract_path, dir)
+    server.disconnect()
+    try:
+        os.remove(local_filepath)
+        print(f"Local file deleted: {local_filepath}")
+        shutil.rmtree(extract_path)
+        print(f"Local folder deleted: {extract_path}")
+        return jsonify({"message": "Upload file success"}), 200
+    except OSError as e:
+        print(f"Error deleting local file: {e}")
+        return jsonify({"message": "Upload file failed"}), 500
+    
+@server_bp.route("/download_file/<server_id>", methods=["GET"])
+@token_required
+def download_file(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}), 500
+    db.close()
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+    server.connect()
+
+    file_path_encoded = request.args.get("file")
+    file_path = base64.b64decode(file_path_encoded).decode('utf-8')
+    if file_path == None:
+        db.close()
+        return jsonify({"messsage": "File path is required"}), 500
+    file_path = str(file_path)
+   
+    if not server.check_script_exists_on_remote(file_path) :
+        db.close()
+        return jsonify({"messsage": "File path does not exist"}), 500
+    
+    local_file_path = os.environ.get("TMP_FOLDER")
+    local_file_path = os.path.join(local_file_path, server_id)
+
+    try:
+        os.makedirs(local_file_path)
+    except OSError as e:
+        if "file already exists" in str(e):  # Check for file/folder existence in error message
+            print(f"Folder '{local_file_path}' already exists.")
+        else:
+            print(f"Error creating folder: {e}")
+   
+    server.download_file_from_remote(file_path, local_file_path)
+    filename = os.path.basename(file_path)
+    local_file_path = os.path.join(local_file_path, filename)
+
+    server.disconnect()
+    
+    response = make_response(send_file(local_file_path, mimetype="application/octet-stream", as_attachment=True, download_name=filename))    
+    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
+    
+    return response, 200
+
+@server_bp.route("/download_folder/<server_id>", methods=["GET"])
+@token_required
+def download_folder(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}), 500
+    db.close()
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+    server.connect()
+
+    folder_path_encoded = request.args.get("folder")
+    folder_path = base64.b64decode(folder_path_encoded).decode('utf-8')
+    if folder_path == None:
+        db.close()
+        return jsonify({"messsage": "Folder path is required"}), 500
+    folder_path = str(folder_path)
+   
+    if not server.check_script_exists_on_remote(folder_path) :
+        db.close()
+        return jsonify({"messsage": "Folder path does not exist"}), 500
+    
+    local_folder_path = os.environ.get("TMP_FOLDER")
+    local_folder_path = os.path.join(local_folder_path, server_id)
+
+    try:
+        os.makedirs(local_folder_path)
+    except OSError as e:
+        if "file already exists" in str(e):  # Check for file/folder existence in error message
+            print(f"Folder '{local_folder_path}' already exists.")
+        else:
+            print(f"Error creating folder: {e}")
+   
+    server.download_folder(folder_path, local_folder_path)
+    filename = os.path.basename(folder_path)
+    filename_zip = f"{filename}.zip"
+    local_folder_path = os.path.join(local_folder_path, filename_zip)
+
+    server.disconnect()
+    
+    response = make_response(send_file(local_folder_path, mimetype="application/zip", as_attachment=True, download_name=filename_zip))    
+    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
+    
+    return response, 200
+
+@server_bp.route("/confirm_download/<server_id>", methods=["POST"])
+@token_required
+def confirm_download(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}), 500
+    db.close()
+
+    data = request.get_json()
+    filename = data.get("filename", None)
+    if filename == None:
+        return jsonify({"message": "File name is required."}), 400
+    
+    local_file_path = os.environ.get("TMP_FOLDER")
+    local_file_path = os.path.join(local_file_path, server_id, filename)
+
+    try:
+        os.remove(local_file_path)
+        print(f"Local file deleted: {local_file_path}")
+        return jsonify({"message": "Upload file success"}), 200
+    except OSError as e:
+        print(f"Error deleting local file: {e}")
+        return jsonify({"message": "Upload file failed"}), 500
+

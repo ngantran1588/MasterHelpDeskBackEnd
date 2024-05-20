@@ -20,7 +20,7 @@ def get_guides():
     if guide_data:
         return jsonify(guide_data), 200
     else:
-        return jsonify({"message": "Organization not found"}), 404
+        return jsonify({"message": "Guide not found"}), 404
 
 @guide_bp.route("/get/<guide_id>", methods=["GET"])
 def get_guide(guide_id):
