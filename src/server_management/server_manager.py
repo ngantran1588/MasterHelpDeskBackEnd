@@ -1,11 +1,9 @@
 import paramiko
 from getpass import getpass
 import os
-import subprocess
 import stat
 import zipfile
 import tempfile
-import errno
 
 class ServerManager:
     def __init__(self, hostname, username, password=None, private_key=None):
@@ -46,10 +44,10 @@ class ServerManager:
 
             # Read stdout and stderr
             stdout_data = stdout.read().decode()
-            stderr_data = stderr.read().decode()
+            stderr_data = stderr.read().decode(encoding="utf-8")
             
             # Return stdout and stderr data
-            return stdout_data, stderr
+            return stdout_data, stderr_data
         except Exception as e:
             print(f"Error executing script: {e}")
 
@@ -79,7 +77,6 @@ class ServerManager:
         except Exception as e:
             print(f"Error in checking script: {e}")
             return False
-
 
     def execute_script(self, script_path, *args):
         try:
