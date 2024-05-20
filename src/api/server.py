@@ -1807,9 +1807,74 @@ def download_file(server_id):
     
     return response, 200
 
-@server_bp.route("/confirm_download_file/<server_id>", methods=["POST"])
+@server_bp.route("/download_folder/<server_id>", methods=["GET"])
 @token_required
-def download_file(server_id):
+def download_folder(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}), 500
+    db.close()
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+    server.connect()
+
+    folder_path_encoded = request.args.get("folder")
+    folder_path = base64.b64decode(folder_path_encoded).decode('utf-8')
+    if folder_path == None:
+        db.close()
+        return jsonify({"messsage": "Folder path is required"}), 500
+    folder_path = str(folder_path)
+   
+    if not server.check_script_exists_on_remote(folder_path) :
+        db.close()
+        return jsonify({"messsage": "Folder path does not exist"}), 500
+    
+    local_folder_path = os.environ.get("TMP_FOLDER")
+    local_folder_path = os.path.join(local_folder_path, server_id)
+
+    try:
+        os.makedirs(local_folder_path)
+    except OSError as e:
+        if "file already exists" in str(e):  # Check for file/folder existence in error message
+            print(f"Folder '{local_folder_path}' already exists.")
+        else:
+            print(f"Error creating folder: {e}")
+   
+    server.download_folder(folder_path, local_folder_path)
+    filename = os.path.basename(folder_path)
+    filename_zip = f"{filename}.zip"
+    local_folder_path = os.path.join(local_folder_path, filename_zip)
+
+    server.disconnect()
+    
+    response = make_response(send_file(local_folder_path, mimetype="application/zip", as_attachment=True, download_name=filename_zip))    
+    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
+    
+    return response, 200
+
+@server_bp.route("/confirm_download/<server_id>", methods=["POST"])
+@token_required
+def confirm_download(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     db.connect()
