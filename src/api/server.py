@@ -1607,6 +1607,8 @@ def upload_file(server_id):
     dir = request.form.get("dir", None)
     if dir == None:
         dir = os.environ.get("DEFAULT_FOLDER")
+    if dir == "undefined":
+        return jsonify({"message": "File path is required"}), 400
     filename = uploaded_file.filename
 
     db_env = LoadDBEnv.load_db_env()
@@ -1677,6 +1679,9 @@ def upload_folder(server_id):
     dir = request.form.get("dir", None)
     if dir == None:
         dir = os.environ.get("DEFAULT_FOLDER")
+    if dir == "undefined":
+        return jsonify({"message": "File path is required"}), 400
+
     filename = uploaded_file.filename
 
     db_env = LoadDBEnv.load_db_env()

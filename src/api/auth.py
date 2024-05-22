@@ -72,15 +72,40 @@ def sign_up():
     password = data["password"]
     full_name = data["full_name"]
     email = data["email"]
-
-    if auth.sign_up(username, password, full_name, email):
-        db.close()
-        return jsonify({"message": "Sign-up successful"}), 201
+    
+    if auth.send_otp(email):
+        result, msg = auth.sign_up(username, password, full_name, email)
+        if result:
+            db.close()
+            return jsonify({"message": msg}), 201
+        else:
+            db.close()
+            return jsonify({"message": msg}), 400
     else:
         db.close()
-        return jsonify({"message": "Sign-up failed"}), 400
+        return jsonify({"message": "Failed to send OTP"}), 500
 
+@auth_bp.route("/verify_identity", methods=["POST"])
+def verify_identity():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    auth = Auth(db)
+    data = request.get_json()
+    email = data["email"]
+    otp = data["otp"]
 
+    if auth.verify_otp(email, otp):
+        auth.delete_used_otp(email, otp)
+        username = auth.get_username_from_email(email)
+        auth.change_status(username, "active")
+        db.close()
+        return jsonify({"message": "Identity successfully"}), 200
+    else:
+        auth.delete_expired_otp()
+        db.close()
+        return jsonify({"message": "Identity failed"}), 500
+    
 @auth_bp.route("/forgot_password", methods=["POST"])
 def forgot_password():
     db_env = LoadDBEnv.load_db_env()
