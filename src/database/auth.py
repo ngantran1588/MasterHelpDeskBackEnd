@@ -261,6 +261,19 @@ class Auth:
         except Exception as e:
             print("Error get customer_id from username:", e)
 
+    # Get email from username
+    def get_email_from_username(self, username: str) -> str:
+        query = "SELECT email from tbl_customer WHERE username = %s"
+        value = (username,)
+
+        try:
+            result = self.db.execute_query(query, value)
+            email = result[0][0]
+
+            return email
+        except Exception as e:
+            print("Error get email from username:", e)
+
     def check_role(self, username: str) -> bool:
         try:
             query = "SELECT role_id FROM tbl_customer WHERE username = %s"
@@ -403,3 +416,28 @@ class Auth:
             return "Update status successfully", True
         except Exception as e:
             print("Error changing status:", e)
+
+    def get_role_by_username(self, username: str):
+        query = "SELECT role_id from tbl_customer WHERE username = %s"
+        value = (username,)
+
+        try:
+            result = self.db.execute_query(query, value)
+            role = result[0][0]
+
+            return role
+        except Exception as e:
+            print("Error get role from username:", e)      
+            return None
+    
+    def get_role_of_members(self, list_username):
+        return_list = []
+        for username in list_username:
+            role = self.get_role_by_username(username)
+            if role == None:
+                return None
+            data = {"username": username, "role": role}
+            return_list.append(data)
+
+        return return_list
+        

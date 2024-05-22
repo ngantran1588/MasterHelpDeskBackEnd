@@ -161,7 +161,6 @@ class Organization:
             msg = f"Error adding user(s) to organization: {e}"
             return False, msg
 
-
     def remove_user(self, organization_id: str, remove_username: str) -> bool:
         try:
             # Fetch the current member list of the organization from the database
@@ -204,7 +203,6 @@ class Organization:
         except Exception as e:
             msg = f"Error removing user from organization:{e}"
             return False, msg
-
 
     def check_organization_name_exist(self, name: str) -> bool:
         query = "SELECT COUNT(*) FROM tbl_organization WHERE name = %s"
