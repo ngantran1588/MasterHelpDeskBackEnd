@@ -73,7 +73,7 @@ def add_role():
         db.close()
 
         if success:
-            return jsonify({"message": "role added successfully"}), 201
+            return jsonify({"message": "role added successfully"}), 200
         else:
             return jsonify({"message": "Failed to add role"}), 500
     except Exception as e:

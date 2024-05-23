@@ -99,3 +99,12 @@ class Package:
             print("Error getting package:", e)
             return None
 
+    def get_number_package(self):
+        query = "SELECT COUNT(*) FROM tbl_package"
+     
+        try:
+            result = self.db.execute_query(query)
+            return result[0][0]
+        except Exception as e:
+            print("Error getting package number:", e)
+            return False

@@ -88,6 +88,7 @@ def after_transaction(billing_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     billing = Billing(db)
+    auth = Auth(db)
 
     username = request.jwt_payload.get("username")
     if username == None:
@@ -99,6 +100,8 @@ def after_transaction(billing_id):
     if billing_info == None:
         return jsonify({"message": "Can not get billing info from db"}), 500
     else:
+        email = auth.get_email_from_username(username)
+        billing.send_email(email, billing_info)
         return jsonify({"billing_info": billing_info}), 200
 
 @billing_bp.route("/delete_billing/<billing_id>", methods=["DELETE"])

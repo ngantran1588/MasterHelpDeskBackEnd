@@ -42,13 +42,13 @@ class Auth:
 
         # Check if the username already exists
         if self.exist_username(username):
-            print("Username already exists. Please choose another username.")
-            return False
+            msg = "Username already exists. Please choose another username."
+            return False, msg
         
         # Check if the email already exists
         if self.exist_email(email):
-            print("Email already exists. Please choose another email.")
-            return False
+            msg = "Email already exists. Please choose another email."
+            return False, msg
         
         # Insert the customer data into the database
         query = """
@@ -56,17 +56,17 @@ class Auth:
             VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         role_id = [const.ROLE_ID_USER]
-        status = const.STATUS_ACTIVE
+        status = const.STATUS_INACTIVE
 
         values = (customer_id, username, encrypted_password, full_name, email,
                   role_id, status)
         try:
             self.db.execute_query(query, values)
-            print("Sign-up successful!")
-            return True
+            msg = "Sign-up successful!"
+            return True, msg
         except Exception as e:
-            print("Error signing up:", e)
-            return False
+            msg = f"Error signing up:{e}"
+            return False, msg
 
     # Change from User to Super User
     def change_role_to_superuser(self, username: str) -> bool:
@@ -261,6 +261,19 @@ class Auth:
         except Exception as e:
             print("Error get customer_id from username:", e)
 
+    # Get email from username
+    def get_email_from_username(self, username: str) -> str:
+        query = "SELECT email from tbl_customer WHERE username = %s"
+        value = (username,)
+
+        try:
+            result = self.db.execute_query(query, value)
+            email = result[0][0]
+
+            return email
+        except Exception as e:
+            print("Error get email from username:", e)
+
     def check_role(self, username: str) -> bool:
         try:
             query = "SELECT role_id FROM tbl_customer WHERE username = %s"
@@ -386,3 +399,45 @@ class Auth:
         except Exception as e:
             print("Error checking user status:", e)
             return False
+
+    def change_status(self, username: str, new_status: str) -> bool:
+        if new_status.upper() == const.STATUS_ACTIVE:
+            new_status = const.STATUS_ACTIVE
+        elif new_status.upper() == const.STATUS_INACTIVE:
+            new_status = const.STATUS_INACTIVE
+        else:
+            return "status is incorrect", False
+
+        try:
+            query = "UPDATE tbl_customer SET new_status = %s WHERE username = %s"
+            values = (new_status, username)
+
+            self.db.execute_query(query, values)
+            return "Update status successfully", True
+        except Exception as e:
+            print("Error changing status:", e)
+
+    def get_role_by_username(self, username: str):
+        query = "SELECT role_id from tbl_customer WHERE username = %s"
+        value = (username,)
+
+        try:
+            result = self.db.execute_query(query, value)
+            role = result[0][0]
+
+            return role
+        except Exception as e:
+            print("Error get role from username:", e)      
+            return None
+    
+    def get_role_of_members(self, list_username):
+        return_list = []
+        for username in list_username:
+            role = self.get_role_by_username(username)
+            if role == None:
+                return None
+            data = {"username": username, "role": role}
+            return_list.append(data)
+
+        return return_list
+        
