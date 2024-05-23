@@ -209,6 +209,37 @@ def update_server_information(server_id):
     else:
         return jsonify({"message": "Failed to update server information"}), 500
 
+@server_bp.route("/change_status/<server_id>", methods=["PUT"])
+@token_required
+def change_status(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username_authen = request.jwt_payload.get("username")
+   
+    if username_authen == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    if server_manager.check_user_access(username_authen, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    data = request.get_json()
+    status = data["status"]
+    success = server_manager.update_status(server_id, status)
+    db.close()
+    if success:
+        return jsonify({"message": "Status updated successfully"}), 200
+    else:
+        return jsonify({"message": "Failed to update status"}), 500
+    
 @server_bp.route("/get_server_data/<server_id>", methods=["GET"])
 @token_required
 def get_server_data(server_id):
