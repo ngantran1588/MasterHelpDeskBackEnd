@@ -49,17 +49,17 @@ class Subscription:
         except Exception as e:
             print("Error updating subscription status:", e)
 
-    def check_renewal(self, expiration_date: datetime) -> str:
+    def check_expiration(self, expiration_date: datetime) -> str:
         try:
             time_diff = expiration_date - datetime.now(timezone.utc)
             if time_diff.days <= 2 and time_diff.days > 1:
-                return "2 days left for renewal"
+                return "2 days left for renewal", False
             elif time_diff.days == 1:
-                return "1 day left for renewal"
+                return "1 day left for renewal", False
             elif time_diff.days <= 0:
-                return "Subscription expired"
+                return "Subscription expired", True
             else:
-                return "Subscription active"
+                return "Subscription active", False
         except Exception as e:
             return "Error checking renewal"
         
@@ -139,4 +139,31 @@ class Subscription:
             return subscriptions
         except Exception as e:
             print("Error fetching subscriptions by status:", e)
+            return None
+        
+    def get_subscriptions_by_customer_id(self, customer_id: str):
+        try:
+            query = """SELECT subscription_id, subscription_name, renewable, subscription_type, subscription_status, expiration_date 
+                       FROM tbl_subscription WHERE customer_id = %s"""
+            values = (customer_id,)
+            result = self.db.execute_query(query, values)
+
+            if len(result) == 0:
+                return None
+
+            subscriptions = []
+            for subscription_info in result:
+                subscription = {
+                    "subscription_id": subscription_info[0],
+                    "subscription_name": subscription_info[1],
+                    "renewable": subscription_info[2],
+                    "subscription_type": subscription_info[3],
+                    "subscription_status": subscription_info[4],
+                    "expiration_date": subscription_info[5].strftime("%Y-%m-%d %H:%M:%S") if subscription_info[5] else None,
+                }
+                subscriptions.append(subscription)
+
+            return subscriptions
+        except Exception as e:
+            print("Error fetching subscriptions by customer ID:", e)
             return None
