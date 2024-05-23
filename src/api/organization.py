@@ -260,7 +260,6 @@ def get_number_of_users(organization_id):
         print("Error getting number of users:", e)
         return jsonify({"message": "Failed to get number of users"}), 500
 
-
 @organization_bp.route("/get_organization_data/<organization_id>", methods=["GET"])
 @token_required
 def get_organization_data_by_id(organization_id):

@@ -325,6 +325,9 @@ class Organization:
         try:
             self.db.execute_query(query, (organization_id,))
             print("Organization deleted successfully!")
+            query_server = """DELETE FROM tbl_server WHERE organization_id = %s"""
+            self.db.execute_query(query_server, (organization_id,))
+            print("Server in organization deleted successfully!")
             return True
         except Exception as e:
             print("Error deleting organization:", e)
