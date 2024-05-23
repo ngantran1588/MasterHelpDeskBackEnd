@@ -136,7 +136,6 @@ class Server:
             print("Error updating server information:", e)
             return False
 
-
     def update_status(self, server_id: str, new_status: str) -> bool:
         query = "UPDATE tbl_server SET status = %s WHERE server_id = %s"
         if new_status == const.STATUS_INACTIVE:
@@ -178,6 +177,42 @@ class Server:
 
     def check_server_slot(self, organization_id: str):
         try:
+            total_slot = self.get_total_slot(organization_id)
+
+            if not total_slot and total_slot != 0:
+                print("Error checking total_slot")
+                return False
+            
+            current_slot = self.get_current_slot(organization_id)
+
+            if not current_slot and current_slot != 0:
+                print("Error checking current_slot")
+                return False
+            
+            return current_slot >= total_slot
+        except Exception as e:
+            print("Error checking server slot:", e)
+            return False
+        
+    def get_remain_slot(self, organization_id: str):
+        try:
+            total_slot = self.get_total_slot(organization_id)
+            if not total_slot:
+                print("Error checking remain_slot")
+                return None
+            
+            current_slot = self.get_current_slot(organization_id)
+            if not current_slot:
+                print("Error checking remain_slot")
+                return None
+            remain_slot = total_slot - current_slot
+            return remain_slot
+        except Exception as e:
+            print("Error checking remain server slot:", e)
+            return None
+        
+    def get_total_slot(self, organization_id: str):
+        try:
             # Get customer_id from tbl_organization using organization_id
             query_customer_id = "SELECT customer_id FROM tbl_organization WHERE organization_id = %s"
             values_customer_id = (organization_id,)
@@ -193,15 +228,22 @@ class Server:
             values_slot = (subscription_type,)
             total_slot = self.db.execute_query(query_slot, values_slot)[0][0]
 
+            return total_slot
+        except Exception as e:
+            print("Error checking total server slot:", e)
+            return None
+
+    def get_current_slot(self, organization_id: str):
+        try:
             # Count current server for organization_id
             query_count_server = "SELECT COUNT(*) FROM tbl_server WHERE organization_id = %s"
             values_count_server = (organization_id,)
             current_slot = self.db.execute_query(query_count_server, values_count_server)[0][0]
             
-            return current_slot >= total_slot
+            return current_slot
         except Exception as e:
-            print("Error checking server slot:", e)
-            return False
+            print("Error checking current server slot:", e)
+            return None
 
     def get_rsa_key(self, server_id: str):
         query = """SELECT rsa_key FROM tbl_server WHERE server_id = %s"""

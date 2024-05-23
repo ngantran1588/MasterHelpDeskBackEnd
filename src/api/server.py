@@ -383,6 +383,7 @@ def get_server_members(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server = Server(db)
+    auth = Auth(db)
 
     username = request.jwt_payload.get("username")
 
@@ -401,8 +402,37 @@ def get_server_members(server_id):
     server_members = server.get_server_members(server_id)
     db.close()
     if len(server_members) > 0 :
-        return jsonify({"members": server_members}), 200
+        list_member = auth.get_role_of_members(server_members)
+        if list_member == None:
+            return jsonify({"message": "Error in querying server member"}), 403
+        return jsonify({"members": list_member}), 200
     return jsonify({"message": "Server not found or there is no member in server"}), 403
+
+@server_bp.route("/get_remain_slot/<organization_id>", methods=["GET"])
+@token_required
+def get_remain_slot(organization_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server = Server(db)
+    
+    username = request.jwt_payload.get("username")
+
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    if not organization_id:
+        db.close()
+        return jsonify({"message": "Organization ID is required."}), 400
+
+    remain_slot = server.get_remain_slot(organization_id)
+    db.close()
+
+    if remain_slot:
+        return jsonify({"slot": remain_slot}), 200
+    else:
+        return jsonify({"message": "Error in querying remain slot"}), 500
 
 @server_bp.route("/get_server_info/<server_id>", methods=["GET"])
 @token_required
@@ -1607,6 +1637,8 @@ def upload_file(server_id):
     dir = request.form.get("dir", None)
     if dir == None:
         dir = os.environ.get("DEFAULT_FOLDER")
+    if dir == "undefined":
+        return jsonify({"message": "File path is required"}), 400
     filename = uploaded_file.filename
 
     db_env = LoadDBEnv.load_db_env()
@@ -1677,6 +1709,9 @@ def upload_folder(server_id):
     dir = request.form.get("dir", None)
     if dir == None:
         dir = os.environ.get("DEFAULT_FOLDER")
+    if dir == "undefined":
+        return jsonify({"message": "File path is required"}), 400
+
     filename = uploaded_file.filename
 
     db_env = LoadDBEnv.load_db_env()

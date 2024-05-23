@@ -67,7 +67,11 @@ def add_package():
 
         if not package_name and not duration and not description and not slot_number and not slot_server and not price and not status:
             db.close()
-            return jsonify({"error": "Fields are missing"}), 400
+            return jsonify({"message": "Fields are missing"}), 400
+        
+        if package.get_number_package() == 3:
+            db.close()
+            return jsonify({"message": "Can not add more than 3 packages"}), 400
 
         success = package.add_package(package_name, duration, description, slot_number, slot_server, price, status)
 
