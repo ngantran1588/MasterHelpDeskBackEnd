@@ -41,7 +41,6 @@ def login():
         db.close()
         return jsonify({"message": "Invalid credentials"}), 401
 
-
 @auth_bp.route("/logout", methods=["POST"])
 @multiple_tokens_logout
 def logout():
@@ -140,7 +139,6 @@ def resend_otp():
         db.close()
         return jsonify({"message": "Failed to send OTP"}), 500
     
-
 @auth_bp.route("/verify_otp", methods=["POST"])
 def verify_otp():
     db_env = LoadDBEnv.load_db_env()

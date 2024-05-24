@@ -43,7 +43,7 @@ def update_subscription_status(subscription_id):
 
     return jsonify({"message": "Subscription status updated successfully."}), 200
 
-@subscription_bp.route("/check_renewal/<subscription_id>", methods=["GET"])
+@subscription_bp.route("/check_expiration/<subscription_id>", methods=["GET"])
 @token_required
 def check_renewal(subscription_id):
     db_env = LoadDBEnv.load_db_env()
