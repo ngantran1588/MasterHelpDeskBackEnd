@@ -69,6 +69,11 @@ def add_server():
     else:
         return jsonify({"message": "Failed to add server"}), 500
 
+@server_bp.route("/connect", methods=["POST"])
+def connect():
+    server = ServerManager("12.111.111.11", "root", "passowrd", "NONE")
+    server.connect()
+
 @server_bp.route("/update_rsa_key/<server_id>", methods=["PUT"])
 @token_required
 def update_rsa_key(server_id):
@@ -431,12 +436,15 @@ def get_server_members(server_id):
         return jsonify({"message": "Permission denied"}), 403
 
     server_members = server.get_server_members(server_id)
-    db.close()
+    
     if len(server_members) > 0 :
         list_member = auth.get_role_of_members(server_members)
         if list_member == None:
+            db.close()
             return jsonify({"message": "Error in querying server member"}), 403
+        db.close()
         return jsonify({"members": list_member}), 200
+    db.close()
     return jsonify({"message": "Server not found or there is no member in server"}), 403
 
 @server_bp.route("/get_remain_slot/<organization_id>", methods=["GET"])
