@@ -25,13 +25,16 @@ class ServerManager:
                 self.client.connect(self.hostname, username=self.username, password=self.password)
             else:
                 print("No authentication method provided.")
-                return
+                return False
 
             print("Connected to the server.")
+            return True
         except paramiko.AuthenticationException:
             print("Authentication failed, please verify your credentials.")
+            return False
         except Exception as e:
             print(f"Error: {e}")
+            return False
 
     def execute_script_in_remote_server(self, script_relative_path, *args):
         try:

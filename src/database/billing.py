@@ -275,7 +275,7 @@ class Billing:
         message["Subject"] = "[MHD] Transaction Successful"
 
         text = """
-                    <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+            <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
             <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 
             <head>
@@ -372,8 +372,6 @@ class Billing:
                 }
             </style>
 
-
-
             </head>
 
             <body class="clean-body u_body" style="margin: 0;padding: 0;-webkit-text-size-adjust: 100%;background-color: #f3f8ff;color: #000000">
@@ -384,8 +382,6 @@ class Billing:
                 <tr style="vertical-align: top">
                     <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top">
                     <!--[if (mso)|(IE)]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="background-color: #f3f8ff;"><![endif]-->
-
-
 
                     <div class="u-row-container" style="padding: 0px;background-color: transparent">
                         <div class="u-row" style="margin: 0 auto;min-width: 320px;max-width: 500px;overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;background-color: transparent;">
@@ -540,45 +536,14 @@ class Billing:
                                     <tr>
                                         <td style="overflow-wrap:break-word;word-break:break-word;padding:20px;font-family:arial,helvetica,sans-serif;" align="left">
 
-                                        <div style="font-size: 14px; line-height: 140%; text-align: left; word-wrap: break-word;">
-                                            <p style="list-style-type: disc; line-height: 140%;">Hello,</p>
-                                            <p style="list-style-type: disc; line-height: 140%;">&nbsp;</p>
-                                            <p style="list-style-type: disc; line-height: 140%;">Here is a temporary security&nbsp;code&nbsp;for your Master Help Desk Account. It can only be used once within the next <strong>5</strong>&nbsp;minutes, after which it will expire:</p>
-                                        </div>
-
-                                        </td>
-                                    </tr>
-                                    </tbody>
-                                </table>
-
-                                <!--[if (!mso)&(!IE)]><!-->
-                                </div><!--<![endif]-->
-                            </div>
-                            </div>
-                            <!--[if (mso)|(IE)]></td><![endif]-->
-                            <!--[if (mso)|(IE)]></tr></table></td></tr></table><![endif]-->
-                        </div>
-                        </div>
-                    </div>
-
-                    <div class="u-row-container" style="padding: 0px;background-color: transparent">
-                        <div class="u-row" style="margin: 0 auto;min-width: 320px;max-width: 500px;overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;background-color: transparent;">
-                        <div style="border-collapse: collapse;display: table;width: 100%;height: 100%;background-color: transparent;">
-                            <!--[if (mso)|(IE)]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding: 0px;background-color: transparent;" align="center"><table cellpadding="0" cellspacing="0" border="0" style="width:500px;"><tr style="background-color: transparent;"><![endif]-->
-
-                            <!--[if (mso)|(IE)]><td align="center" width="500" style="background-color: #3867a5;width: 500px;padding: 0px;border-top: 0px solid transparent;border-left: 0px solid transparent;border-right: 0px solid transparent;border-bottom: 0px solid transparent;border-radius: 0px;-webkit-border-radius: 0px; -moz-border-radius: 0px;" valign="top"><![endif]-->
-                            <div class="u-col u-col-100" style="max-width: 320px;min-width: 500px;display: table-cell;vertical-align: top;">
-                            <div style="background-color: #3867a5;height: 100%;width: 100% !important;border-radius: 0px;-webkit-border-radius: 0px; -moz-border-radius: 0px;">
-                                <!--[if (!mso)&(!IE)]><!-->
-                                <div style="box-sizing: border-box; height: 100%; padding: 0px;border-top: 0px solid transparent;border-left: 0px solid transparent;border-right: 0px solid transparent;border-bottom: 0px solid transparent;border-radius: 0px;-webkit-border-radius: 0px; -moz-border-radius: 0px;"><!--<![endif]-->
-
-                                <table style="font-family:arial,helvetica,sans-serif;" role="presentation" cellpadding="0" cellspacing="0" width="100%" border="0">
-                                    <tbody>
-                                    <tr>
-                                        <td style="overflow-wrap:break-word;word-break:break-word;padding:20px;font-family:arial,helvetica,sans-serif;" align="left">
-
-                                        <div style="font-size: 32px; color: #fffdfd; line-height: 140%; text-align: center; word-wrap: break-word;">
-                                            <p style="line-height: 140%;"><strong>%s</strong></p>
+                                        <div style="font-size: 14px; line-height: 140%; text-align: center; word-wrap: break-word; border: 1px solid #3867a5; padding: 10px;">
+                                            <p style="line-height: 150%; color: #5cb85c; font-size: 20px"><strong>Transaction successfully created!</strong></p>
+                                            <p style="line-height: 140%;">&nbsp;</p>
+                                            <p style="line-height: 140%;">Billing ID: <strong>{billing_id}</strong></p>
+                                            <p style="line-height: 140%;">Timestamp: <strong>{timestamp}</strong></p>
+                                            <p style="line-height: 140%;">Amount: <strong>{amount} VND</strong></p>
+                                            <p style="line-height: 140%;">Platform: <strong>Momo</strong></p>
+                                            <p style="line-height: 140%;">Subscription ID: <strong>{sub_id}</strong></p>
                                         </div>
 
                                         </td>
@@ -613,10 +578,10 @@ class Billing:
                                         <td style="overflow-wrap:break-word;word-break:break-word;padding:20px;font-family:arial,helvetica,sans-serif;" align="left">
 
                                         <div style="font-size: 14px; line-height: 140%; text-align: left; word-wrap: break-word;">
-                                            <p style="list-style-type: disc; line-height: 140%;">Did you receive this email without having an active request from Master Help Desk to enter a verification&nbsp;code? If so, the security of your Master Help Desk account may be compromised. Please change your password as soon as possible.</p>
-                                            <p style="list-style-type: disc; line-height: 140%;">&nbsp;</p>
-                                            <p style="list-style-type: disc; line-height: 140%;">Sincerely,</p>
-                                            <p style="list-style-type: disc; line-height: 140%;">Master Help Desk Team</p>
+                                            <p style="line-height: 140%;">We kindly request that you retain your invoice for security purposes during your use of our system. Your understanding and support for the project are greatly appreciated. Thank you.</p>
+                                            <p style="line-height: 140%;">&nbsp;</p>
+                                            <p style="line-height: 140%;">Sincerely,</p>
+                                            <p style="line-height: 140%;">Master Help Desk Team</p>
                                         </div>
 
                                         </td>
@@ -685,7 +650,8 @@ class Billing:
             </body>
 
             </html>
-        """.replace("%s", billing)
+
+        """.format(billing_id=billing["billing_id"], timestamp=billing["timestamp"], amount=billing["amount"], sub_id=billing["subscription_id"])
 
         message.attach(MIMEText(text, "html"))
         gmail_host = os.environ.get("GMAIL_HOST")
