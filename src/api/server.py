@@ -20,6 +20,22 @@ server_bp = Blueprint("server", __name__)
 def secure_filename(filename):
   return filename.replace("\\", "").replace("/", "")
 
+def parse_ufwlog_regex(log_message):
+    # Regex pattern to capture timestamp (flexible on separators) and host
+    pattern = r"(\w+\s\d+\s-\s\d+:\d+:\d+)(\s.*\s)(kernel.*)"
+
+    # Match the pattern and extract groups
+    match = re.match(pattern, log_message)
+    if match:
+        # Extract timestamp (handle cases with or without separators)
+        timestamp = match.groups(1)[0]
+        host = match.groups(1)[1]
+        host = host.strip()
+        log = match.groups(1)[2]
+    else:
+        return None, None, None
+
+    return timestamp, host, log
 @server_bp.route("/add", methods=["POST"])
 @token_required
 def add_server():
@@ -1731,8 +1747,87 @@ def report_log_ufw(server_id):
         # Parse the output
         lines = data_return.split("\n")
         lines.remove("")
+        parsed_log = []
+        for line in lines:
+            timestamp, host, log = parse_ufwlog_regex(line)
+            if timestamp == None or host == None or log == None:
+                return jsonify({"message": "Error in parsing log"}), 500
+            
+            parsed_log.append({"timestamp": timestamp, "host": host, "log": log})
+        return jsonify({"parsed_log": parsed_log}), 200
+    return stderr, 500
+
+@server_bp.route("/report_raw_log_ufw/<server_id>", methods=["GET"])
+@token_required
+def report_raw_log_ufw(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}, 500)
+
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
+
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
+    
+    execute_code_path = os.environ.get("SCRIPT_PATH_LOG_UFW")
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(execute_code_path)
+    file_in_server = f"{script_directory}/{file_name}"
+   
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(execute_code_path, script_directory)
+        server.grant_permission(file_in_server, 700)
+    db.close()
+    data_return, stderr = server.execute_script_in_remote_server(file_in_server)
+    server.disconnect()
+    if data_return:
+        local_file_path = os.environ.get("TMP_FOLDER")
+        local_file_path = os.path.join(local_file_path, server_id)
+
+        try:
+            os.makedirs(local_file_path)
+        except OSError as e:
+            if "file already exists" in str(e):  # Check for file/folder existence in error message
+                print(f"Folder '{local_file_path}' already exists.")
+            else:
+                print(f"Error creating folder: {e}")
         
-        return jsonify({"lines": lines}), 200
+        filename = os.environ.get("LOG_UFWLOG")
+        local_file_path = os.path.join(local_file_path, filename)
+
+        with open(local_file_path, 'w') as f:  # Open the file in write mode ('w')
+            if isinstance(data_return, str):  # Check if data is a single string
+                f.write(data_return)
+            else:  # Assume data is a list of strings
+                f.writelines(data_return)  # Write each line in the list
+
+        response = make_response(send_file(local_file_path, mimetype="application/octet-stream", as_attachment=True, download_name=filename))    
+        response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
+        
+        return response, 200
     return stderr, 500
 
 @server_bp.route("/upload_file/<server_id>", methods=["POST"])
