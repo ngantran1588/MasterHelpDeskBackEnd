@@ -61,6 +61,13 @@ def add_server():
         db.close()
         return jsonify({"message": "Failed to check server slot"}), 500
 
+    server = ServerManager(hostname, username, password, rsa_key)
+    
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server, server information is incorrect"}), 500
+    server.disconnect()
     success = server_manager.add_server(username_authen, server_name, hostname, organization_id, username, password, rsa_key, port)
     
     db.close()
@@ -68,11 +75,6 @@ def add_server():
         return jsonify({"message": "Server added successfully"}), 201
     else:
         return jsonify({"message": "Failed to add server"}), 500
-
-@server_bp.route("/connect", methods=["POST"])
-def connect():
-    server = ServerManager("12.111.111.11", "root", "passowrd", "NONE")
-    server.connect()
 
 @server_bp.route("/update_rsa_key/<server_id>", methods=["PUT"])
 @token_required
@@ -502,7 +504,10 @@ def get_server_info(server_id):
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
     
     info_path = os.environ.get("SCRIPT_PATH_GET_INFO")
     script_directory = os.environ.get("SERVER_DIRECTORY")
@@ -558,7 +563,10 @@ def get_all_proxy(server_id):
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
     
     proxy_path = os.environ.get("SCRIPT_PATH_GET_ALL_PROXY")
     script_directory = os.environ.get("SERVER_DIRECTORY")
@@ -619,7 +627,10 @@ def update_proxy(server_id):
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
     
     if protocol == "ftp_proxy":
         proxy_path = os.environ.get("SCRIPT_PATH_UPDATE_FTP_PROXY")
@@ -679,7 +690,10 @@ def add_proxy(server_id):
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
     
     if protocol == "ftp_proxy":
         proxy_path = os.environ.get("SCRIPT_PATH_FTP_PROXY")
@@ -742,7 +756,13 @@ def delete_proxy(server_id):
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
     
     if protocol == "ftp_proxy":
         proxy_path = os.environ.get("SCRIPT_PATH_DELETE_FTP_PROXY")
@@ -842,7 +862,10 @@ def install_lib(server_id):
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"]) 
 
     # Connect to the server
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
     
     if library == "docker":
         library_path = os.environ.get("SCRIPT_PATH_LIB_INSTALL_DOCKER")
@@ -910,7 +933,10 @@ def uninstall_lib(server_id):
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
     
     if library == "docker":
         library_path = os.environ.get("SCRIPT_PATH_LIB_UNINSTALL_DOCKER")
@@ -977,7 +1003,10 @@ def firewall_action(server_id):
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
     arg = None
     if action == "allow_ip":
         action_path = os.environ.get("SCRIPT_PATH_ALLOW_IP")
@@ -1055,7 +1084,10 @@ def firewall_rules(server_id):
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
     
     action_path = os.environ.get("SCRIPT_PATH_SHOW_STATUS")
 
@@ -1129,7 +1161,10 @@ def docker_build(server_id):
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
     
     docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
     script_directory = os.environ.get("SERVER_DIRECTORY")
@@ -1192,7 +1227,10 @@ def docker_containers(server_id):
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
     
     if not container or not action:
         return jsonify({"message":"No data for container"}, 500)
@@ -1248,7 +1286,10 @@ def docker_create_containers(server_id):
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
     
     if not image or not container_name:
         db.close()
@@ -1305,7 +1346,10 @@ def docker_compose(server_id):
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
     
     if not compose_yaml:
         db.close()
@@ -1354,7 +1398,12 @@ def docker_list_images(server_id):
         return jsonify({"message":"No data for server"}, 500)
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
-    server.connect()
+    
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
+    
     docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
     script_directory = os.environ.get("SERVER_DIRECTORY")
 
@@ -1415,7 +1464,12 @@ def docker_list_containers(server_id):
         return jsonify({"message":"No data for server"}, 500)
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
-    server.connect()
+
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
+    
     docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
     script_directory = os.environ.get("SERVER_DIRECTORY")
     
@@ -1488,7 +1542,10 @@ def execute_code(server_id):
         return jsonify({"message":"No data for server"}, 500)
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
 
     if not server.check_script_exists_on_remote(execute_file):
         db.close()
@@ -1546,7 +1603,12 @@ def report_log_syslog(server_id):
         return jsonify({"message":"No data for server"}, 500)
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
-    server.connect()
+    
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
+    
     execute_code_path = os.environ.get("SCRIPT_PATH_LOG_SYSLOG")
     script_directory = os.environ.get("SERVER_DIRECTORY")
     
@@ -1594,7 +1656,12 @@ def report_log_last(server_id):
         return jsonify({"message":"No data for server"}, 500)
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
-    server.connect()
+
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 
+
     execute_code_path = os.environ.get("SCRIPT_PATH_LOG_LAST")
     script_directory = os.environ.get("SERVER_DIRECTORY")
     
@@ -1642,7 +1709,12 @@ def report_log_ufw(server_id):
         return jsonify({"message":"No data for server"}, 500)
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
-    server.connect()
+
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
+    
     execute_code_path = os.environ.get("SCRIPT_PATH_LOG_UFW")
     script_directory = os.environ.get("SERVER_DIRECTORY")
     
@@ -1720,7 +1792,10 @@ def upload_file(server_id):
     remote_filepath = os.path.join(dir, filename)
    
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
 
     if server.check_script_exists_on_remote(remote_filepath):
         return jsonify({"message":"File exists on server"}), 500
@@ -1792,7 +1867,10 @@ def upload_folder(server_id):
     db.close()
    
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
 
     extracted_folder = os.path.splitext(filename)[0]
     remote_filepath = os.path.join(dir, extracted_folder)
@@ -1845,7 +1923,10 @@ def download_file(server_id):
     db.close()
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
 
     file_path_encoded = request.args.get("file")
     file_path = base64.b64decode(file_path_encoded).decode('utf-8')
@@ -1909,7 +1990,10 @@ def download_folder(server_id):
     db.close()
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
-    server.connect()
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
 
     folder_path_encoded = request.args.get("folder")
     folder_path = base64.b64decode(folder_path_encoded).decode('utf-8')
