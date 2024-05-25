@@ -37,7 +37,7 @@ def parse_syslog_regex(log_message):
 
 def parse_ufwlog_regex(log_message):
     # Regex pattern to capture timestamp (flexible on separators) and host
-    pattern = r"(\w+\s\d+\s-\s\d+:\d+:\d+)(\s.*\s)(kernel.*)"
+    pattern = r"(\w+\s\d+\s\d+:\d+:\d+)(\s.*\s)(kernel.*)"
 
     # Match the pattern and extract groups
     match = re.match(pattern, log_message)
@@ -55,9 +55,11 @@ def parse_lastlog_regex(log_message):
     # Regex pattern to capture timestamp (flexible on separators) and host
     pattern = r"^(\w+)\s+((pts\/\d+\s+))((\S+)?)(\s+)((\S+\s+\S+\s+.+))$"
     pattern_1 = r"^(reboot)\s+(\S+\s+boot)\s+([^ ]+)(?:\s+|\t+)(.+)$"
+    pattern_2 = r"^(wtmp)\s(begins)\s(.*)$"
     # Match the pattern and extract groups
     match = re.match(pattern, log_message)
     match_1 = re.match(pattern_1, log_message)
+    match_2 = re.match(pattern_2, log_message)
     if match:        
         user = match.groups(1)[0]
         info = (match.groups(1)[1]).strip()
@@ -68,6 +70,11 @@ def parse_lastlog_regex(log_message):
         info = (match_1.groups(1)[1]).strip()
         from_ip = (match_1.groups(1)[2]).strip()
         timestamp = (match_1.groups(1)[3]).strip()
+    elif match_2:
+        user = match_2.groups(1)[0]
+        info = (match_2.groups(1)[1]).strip()
+        from_ip = ""
+        timestamp = (match_2.groups(1)[2]).strip()
     else:
         return None, None, None, None
     return user, info, from_ip, timestamp
@@ -1811,6 +1818,8 @@ def report_log_last(server_id):
         lines.remove("")
         parsed_log = []
         for line in lines:
+            if line == "":
+                continue
             user, info, from_ip, timestamp = parse_lastlog_regex(line)
             if user == None or info == None or from_ip == None or timestamp == None:
                 return jsonify({"message": "Error in parsing log"}), 500
