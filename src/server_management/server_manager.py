@@ -14,7 +14,7 @@ class ServerManager:
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-    def connect(self):
+    def connect(self):  
         try:
             if self.private_key:
                 # Use private key authentication
