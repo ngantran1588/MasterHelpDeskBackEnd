@@ -43,13 +43,46 @@ def update_subscription_status(subscription_id):
 
     return jsonify({"message": "Subscription status updated successfully."}), 200
 
-@subscription_bp.route("/check_expiration/<subscription_id>", methods=["GET"])
+@subscription_bp.route("/check_expiration", methods=["GET"])
 @token_required
-def check_renewal(subscription_id):
+def check_expiration():
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     db.connect()
     sub = Subscription(db)
+    auth = Auth(db)
+
+    username = request.jwt_payload.get("username")
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    customer_id = auth.get_customer_id_from_username(username) 
+
+    subscription_id = sub.get_subscriptions_by_customer_id(customer_id)
+
+    subscription = sub.get_subscription_by_id(subscription_id)
+    db.close()
+
+    if subscription:
+        expiration_date = datetime.fromisoformat(subscription["expiration_date"])
+        expiration_msg, status = sub.check_expiration(expiration_date)
+        return jsonify({"message": expiration_msg, "status": status}), 200
+    else:
+        return jsonify({"message": "Subscription not found."}), 404
+
+@subscription_bp.route("/check_expiration_by_id/<subscription_id>", methods=["GET"])
+@token_required
+def check_expiration_by_id(subscription_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    sub = Subscription(db)
+
+    username = request.jwt_payload.get("username")
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
 
     subscription = sub.get_subscription_by_id(subscription_id)
     db.close()

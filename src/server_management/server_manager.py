@@ -44,6 +44,7 @@ class ServerManager:
             # Execute script on the remote server
             stdin, stdout, stderr = self.client.exec_command(f"bash {script_full_path}")
             stdout.channel.recv_exit_status()
+            stderr.channel.recv_stderr_ready()
 
             # Read stdout and stderr
             stdout_data = stdout.read().decode()

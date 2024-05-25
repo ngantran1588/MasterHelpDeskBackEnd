@@ -263,7 +263,6 @@ class Billing:
             print("Error fetching billing records by status:", e)
             return None
         
-    # Email sending function
     def send_email(self, email, billing: Billing):
         sender_email = os.environ.get("OTP_EMAIL")
         receiver_email = email
