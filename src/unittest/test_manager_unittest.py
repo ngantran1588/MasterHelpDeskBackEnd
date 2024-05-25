@@ -5,25 +5,25 @@ from src.database.load_env import LoadDBEnv
 
 class TestAuth(unittest.TestCase):
 
-    # def test_login(self) -> bool:
-    #     db_env = LoadDBEnv.load_db_env()
-    #     db = connector.DBConnector(*db_env)
-    #     db.connect()
-    #     auth = Auth(db)
+    def test_login(self) -> bool:
+        db_env = LoadDBEnv.load_db_env()
+        db = connector.DBConnector(*db_env)
+        db.connect()
+        auth = Auth(db)
 
-    #     result = auth.login("julia", "123456")
-    #     db.close()
-    #     self.assertTrue(result)
+        result = auth.login("julia", "123456")
+        db.close()
+        self.assertTrue(result)
 
-    # def test_change_password(self) -> bool:
-    #     db_env = LoadDBEnv.load_db_env()
-    #     db = connector.DBConnector(*db_env)
-    #     db.connect()
-    #     auth = Auth(db)
+    def test_change_password(self) -> bool:
+        db_env = LoadDBEnv.load_db_env()
+        db = connector.DBConnector(*db_env)
+        db.connect()
+        auth = Auth(db)
 
-    #     _, result = auth.change_password("julia","1234567", "123456")
-    #     db.close()
-    #     self.assertTrue(result)
+        _, result = auth.change_password("julia","1234567", "123456")
+        db.close()
+        self.assertTrue(result)
 
     def test_delete_user(self) -> bool:
         db_env = LoadDBEnv.load_db_env()
