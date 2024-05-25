@@ -73,6 +73,7 @@ class Auth:
         query = "SELECT role_id from tbl_customer WHERE username = %s"
         value = (username,)
         result = self.db.execute_query(query, value)
+
         try:
             new_role_id = result[0][0]
             new_role_id[0] = const.ROLE_ID_SUPER_USER
