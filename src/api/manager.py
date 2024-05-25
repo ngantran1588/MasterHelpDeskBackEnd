@@ -78,7 +78,7 @@ def delete_user():
     else:
         return jsonify({"error": f"Failed to delete user '{username_delete}'"}), 500
 
-@manager_bp.route("/change_user_status", methods=["PATCH"])
+@manager_bp.route("/change_user_status", methods=["PUT"])
 @token_required
 def change_user_status():
     db_env = LoadDBEnv.load_db_env()
