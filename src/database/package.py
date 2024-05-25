@@ -99,7 +99,7 @@ class Package:
             print("Error getting package:", e)
             return None
 
-    def get_number_package(self):
+    def get_number_package(self):     
         query = "SELECT COUNT(*) FROM tbl_package"
      
         try:

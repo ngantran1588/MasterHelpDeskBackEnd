@@ -21,7 +21,6 @@ class Auth:
         else:
             return False
         
-    
     def change_password(self, manager_username, new_password, old_password):
         query = "SELECT manager_id, manager_password from tbl_manager WHERE manager_username = %s"
         value = (manager_username,)
@@ -43,7 +42,6 @@ class Auth:
         except Exception as e:
             msg = f"Error changing password: {e}"
             return msg, False
-
 
     def delete_user(self, username: str) -> bool:
         try:
