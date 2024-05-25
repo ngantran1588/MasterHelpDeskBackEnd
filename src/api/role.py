@@ -111,6 +111,7 @@ def update_role(role_id):
         return jsonify({"error": str(e)}), 500
 
 @role_bp.route("/delete/<role_id>", methods=["DELETE"])
+@token_required
 def delete_role(role_id):
     try:
         db_env = LoadDBEnv.load_db_env()
