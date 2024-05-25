@@ -1689,7 +1689,7 @@ def report_log_syslog(server_id):
 
 @server_bp.route("/report_raw_syslog/<server_id>", methods=["GET"])
 @token_required
-def report_raw_log_last(server_id):
+def report_raw_syslog(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     db.connect()
