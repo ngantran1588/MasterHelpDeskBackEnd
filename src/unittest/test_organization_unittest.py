@@ -11,7 +11,7 @@ class TestAuth(unittest.TestCase):
         db.connect()
         auth = Organization(db)
 
-        result = auth.add_organization("Hehe","0909311022","sirotroncut@gmail.com","huhu khong muon test dau", "julia")
+        result = auth.add_organization("Testing","0909311022","sirotroncut@gmail.com","Test ORG", "julia")
         db.close()
         self.assertTrue(result)
 #chua xong

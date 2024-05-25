@@ -11,7 +11,7 @@ class TestAuth(unittest.TestCase):
         db.connect()
         auth = Guide(db)
 
-        result = auth.add_guide("Hehehee12321","Test nhieu qua dau dau123123")
+        result = auth.add_guide("Test case submit 1.0","Testing methods using python")
         db.close()
         self.assertTrue(result)
 
@@ -21,7 +21,7 @@ class TestAuth(unittest.TestCase):
         db.connect()
         auth = Guide(db)
 
-        result = auth.update_guide("o8Tw9ojG0bslOSVOeOz8TVPyuW4JWRqv2tFvBGUWL0", "Heheheeioqwwerhiqwui","Test nhieu qua dau dau qưoehoqwhuqh")
+        result = auth.update_guide("o8Tw9ojG0bslOSVOeOz8TVPyuW4JWRqv2tFvBGUWL0", "Test case submit 2.0","Python testing 2.0")
         db.close()
         self.assertTrue(result)
 

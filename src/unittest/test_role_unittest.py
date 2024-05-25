@@ -11,7 +11,7 @@ class TestAuth(unittest.TestCase):
         db.connect()
         auth = Role(db)
 
-        result = auth.add_role( "Cuutoi", "tester enen 2.0")
+        result = auth.add_role( "Tester_1", "tester enen 2.0")
         db.close()
         self.assertTrue(result)
 
@@ -21,7 +21,7 @@ class TestAuth(unittest.TestCase):
         db.connect()
         auth = Role(db)
 
-        result = auth.update_role("R003", "Whatthefuckisthis", "tester enen")
+        result = auth.update_role("R003", "Tester_2", "tester enen")
         db.close()
         self.assertTrue(result)
 

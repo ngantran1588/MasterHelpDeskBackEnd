@@ -21,7 +21,7 @@ class TestAuth(unittest.TestCase):
         db.connect()
         auth = Subscription(db)
 
-        result = auth.add_subscription("conmeno","anVsaWFfMjAyNDAzMjMxNzI4MTM=","overrated", "2024-05-27 00:00:00", True )
+        result = auth.add_subscription("Unittest","anVsaWFfMjAyNDAzMjMxNzI4MTM=","Testing 101", "2024-05-27 00:00:00", True )
         db.close()
         self.assertTrue(result)
 

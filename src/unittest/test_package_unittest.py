@@ -11,7 +11,7 @@ class TestAuth(unittest.TestCase):
         db.connect()
         auth = Package(db)
 
-        result = auth.add_package("lamviec3", "2024-05-25 00:00:00", "jeje", "2", "2", "39.99", True)
+        result = auth.add_package("lamviec3", "2024-05-25 00:00:00", "test package", "2", "2", "39.99", True)
         db.close()
         self.assertTrue(result)
 
@@ -22,7 +22,7 @@ class TestAuth(unittest.TestCase):
         db.connect()
         auth = Package(db)
 
-        result = auth.update_package("H1Hcx9XOazuIKCzwnoDC4Eq6SEh5dpR5OiSE7WTTOv0","lamviec2", "2024-05-26 00:00:00", "jejehehe", "3", "3", "49.99", True)
+        result = auth.update_package("H1Hcx9XOazuIKCzwnoDC4Eq6SEh5dpR5OiSE7WTTOv0","lamviec2", "2024-05-26 00:00:00", "test package modified", "3", "3", "49.99", True)
         db.close()
         self.assertTrue(result)
 
