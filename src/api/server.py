@@ -643,7 +643,10 @@ def get_all_proxy(server_id):
         data = json.loads(data_return)
         updated_json_str = json.dumps(data)
         return updated_json_str, 200
-    return stderr, 500
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/update_proxy/<server_id>", methods=["POST"])
 @token_required
@@ -711,7 +714,10 @@ def update_proxy(server_id):
     server.disconnect()
     if data_return:
         return data_return, 200
-    return stderr, 500
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/add_proxy/<server_id>", methods=["POST"])
 @token_required
@@ -774,7 +780,10 @@ def add_proxy(server_id):
     server.disconnect()
     if data_return:
         return data_return, 200
-    return stderr, 500
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/delete_proxy/<server_id>", methods=["DELETE"])
 @token_required
@@ -843,7 +852,10 @@ def delete_proxy(server_id):
     server.disconnect()
     if data_return:
         return data_return, 200
-    return stderr, 500
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/lib_status/<server_id>", methods=["GET"])
 @token_required
@@ -951,8 +963,12 @@ def install_lib(server_id):
     data_return, stderr = server.execute_script_in_remote_server(file_in_server)
     server.disconnect()
     if data_return:
-        return data_return, 200
-    return stderr, 500
+        data_return = data_return.split("\n")
+        return jsonify({"lines": data_return})
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/uninstall_lib/<server_id>", methods=["POST"])
 @token_required
@@ -1010,7 +1026,6 @@ def uninstall_lib(server_id):
     elif library == "python":
         library_path = os.environ.get("SCRIPT_PATH_LIB_UNINSTALL_PYTHON")
 
-
     script_directory = os.environ.get("SERVER_DIRECTORY")
     
     file_name = server.get_file_name(library_path)
@@ -1023,8 +1038,12 @@ def uninstall_lib(server_id):
     data_return, stderr = server.execute_script_in_remote_server(file_in_server)
     server.disconnect()
     if data_return:
-        return data_return, 200
-    return stderr, 500
+        data_return = data_return.split("\n")
+        return jsonify({"lines": data_return})
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/firewall_action/<server_id>", methods=["POST"])
 @token_required
@@ -1110,8 +1129,12 @@ def firewall_action(server_id):
     data_return, stderr = server.execute_script_in_remote_server(file_in_server, arg)
     server.disconnect()
     if data_return:
-        return data_return, 200
-    return stderr, 500
+        data_return = data_return.split("\n")
+        return jsonify({"lines": data_return})
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/firewall_rules/<server_id>", methods=["POST"])
 @token_required
@@ -1179,7 +1202,10 @@ def firewall_rules(server_id):
                     rules.append({"to": to, "action": action, "from": frm})
 
         return json.dumps(rules, indent=4), 200
-    return stderr, 500
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/docker_build/<server_id>", methods=["POST"])
 @token_required
@@ -1248,8 +1274,12 @@ def docker_build(server_id):
     data_return, stderr = server.execute_script_in_remote_server(file_in_server, "build", dockerfile, image_tag)
     server.disconnect()
     if data_return:
-        return data_return, 200
-    return stderr, 500
+        data_return = data_return.split("\n")
+        return jsonify({"lines": data_return})
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/docker_containers/<server_id>", methods=["POST"])
 @token_required
@@ -1307,8 +1337,12 @@ def docker_containers(server_id):
     data_return, stderr = server.execute_script_in_remote_server(file_in_server, action, container)
     server.disconnect()
     if data_return:
-        return data_return, 200
-    return stderr, 500
+        data_return = data_return.split("\n")
+        return jsonify({"lines": data_return})
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/docker_create_containers/<server_id>", methods=["POST"])
 @token_required
@@ -1367,8 +1401,12 @@ def docker_create_containers(server_id):
     data_return, stderr = server.execute_script_in_remote_server(file_in_server, "create", image, container_name)
     server.disconnect()
     if data_return:
-        return data_return, 200
-    return stderr, 500
+        data_return = data_return.split("\n")
+        return jsonify({"lines": data_return})
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/docker_compose/<server_id>", methods=["POST"])
 @token_required
@@ -1427,8 +1465,12 @@ def docker_compose(server_id):
     data_return, stderr = server.execute_script_in_remote_server(file_in_server, action, compose_yaml)
     server.disconnect()
     if data_return:
-        return data_return, 200
-    return stderr, 500
+        data_return = data_return.split("\n")
+        return jsonify({"lines": data_return})
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/docker_list_images/<server_id>", methods=["GET"])
 @token_required
@@ -1493,7 +1535,10 @@ def docker_list_images(server_id):
                 
                 images.append(image)
         return json.dumps(images, indent=4), 200
-    return stderr, 500
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/docker_list_containers/<server_id>", methods=["GET"])
 @token_required
@@ -1564,7 +1609,10 @@ def docker_list_containers(server_id):
                 names = columns[5]
             rules.append({"container_id": container_id, "image": image, "command": command, "created": created, "status": status, "ports": ports, "names": names})
         return json.dumps(rules, indent=4), 200
-    return stderr, 500
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/execute_code/<server_id>", methods=["POST"])
 @token_required
@@ -1632,7 +1680,7 @@ def execute_code(server_id):
     if not stderr and not data_return:
         return jsonify({"message":"Can not execute code on server"}), 500
     if stderr:
-        error_messages = [line for line in stderr]
+        error_messages = stderr.split("\n")
     return jsonify({"lines": lines, "stderr": error_messages}), 200
 
 @server_bp.route("/report_log_syslog/<server_id>", methods=["POST"])
@@ -1692,7 +1740,10 @@ def report_log_syslog(server_id):
             
             parsed_log.append({"timestamp": timestamp, "host": host, "log": log})
         return jsonify({"parsed_log": parsed_log}), 200
-    return stderr, 500
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/report_raw_syslog/<server_id>", methods=["GET"])
 @token_required
@@ -1765,6 +1816,9 @@ def report_raw_syslog(server_id):
         response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
         
         return response, 200
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
     return stderr, 500
 
 @server_bp.route("/report_log_last/<server_id>", methods=["POST"])
@@ -1826,7 +1880,10 @@ def report_log_last(server_id):
             
             parsed_log.append({"user": user, "info": info, "from_ip": from_ip, "timestamp": timestamp})
         return jsonify({"parsed_log": parsed_log}), 200
-    return stderr, 500
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/report_raw_log_last/<server_id>", methods=["GET"])
 @token_required
@@ -1899,7 +1956,10 @@ def report_raw_log_last(server_id):
         response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
         
         return response, 200
-    return stderr, 500
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/report_log_ufw/<server_id>", methods=["POST"])
 @token_required
@@ -1958,7 +2018,10 @@ def report_log_ufw(server_id):
             
             parsed_log.append({"timestamp": timestamp, "host": host, "log": log})
         return jsonify({"parsed_log": parsed_log}), 200
-    return stderr, 500
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/report_raw_log_ufw/<server_id>", methods=["GET"])
 @token_required
@@ -2031,7 +2094,10 @@ def report_raw_log_ufw(server_id):
         response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
         
         return response, 200
-    return stderr, 500
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/upload_file/<server_id>", methods=["POST"])
 @token_required
@@ -2370,4 +2436,3 @@ def confirm_download(server_id):
     except OSError as e:
         print(f"Error deleting local file: {e}")
         return jsonify({"message": "Upload file failed"}), 500
-
