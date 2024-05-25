@@ -60,7 +60,7 @@ class Role:
 
         # Extract the numeric part from the ID (assuming format "R" followed by digits)
         if last_id:
-            match = re.search(r"R(\d{1,3})", last_id)  # Regex to extract up to 3 digits
+            match = re.search(r"R(\d{1,2})", last_id)  # Regex to extract up to 3 digits
             if match:
                 numeric_part = int(match.group(1))
             else:
@@ -69,12 +69,11 @@ class Role:
             numeric_part = 0  # Start at 0 if no IDs exist
 
         # Generate the next ID with leading zeros for 3 digits
-        next_id = f"R{numeric_part + 1:03d}"
+        next_id = f"R{numeric_part + 1:02d}"
 
         return next_id
 
     def add_role(self, role_name, description):
-
         role_id = self.generate_id()
 
         if role_id == None:

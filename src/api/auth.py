@@ -188,6 +188,9 @@ def change_password():
         db.close()
         return jsonify({"message": "You don't have permission"}), 403 
     
+    if old_password == new_password:
+        return jsonify({"message": "New password can't be the same as old password"}), 400
+
     message, status = auth.change_password(username, new_password, old_password)
 
     response = jsonify({"message": message})

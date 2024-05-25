@@ -321,6 +321,7 @@ class Organization:
             print("Error querying organization:", e)
 
     def delete_organization(self, organization_id: str) -> bool:
+        
         query = """DELETE FROM tbl_organization WHERE organization_id = %s"""
         try:
             self.db.execute_query(query, (organization_id,))
