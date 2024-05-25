@@ -50,6 +50,8 @@ class Subscription:
             print("Error updating subscription status:", e)
 
     def check_expiration(self, expiration_date: datetime) -> str:
+        expiration_date = expiration_date.astimezone(timezone.utc)
+
         try:
             time_diff = expiration_date - datetime.now(timezone.utc)
             if time_diff.days <= 2 and time_diff.days > 1:
@@ -61,7 +63,7 @@ class Subscription:
             else:
                 return "Subscription active", False
         except Exception as e:
-            return "Error checking renewal"
+            return "Error checking expiration", False
         
     def get_subscription_by_id(self, subscription_id: str):
         try:
