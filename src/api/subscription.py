@@ -61,7 +61,7 @@ def check_expiration():
 
     subscription_id = sub.get_subscriptions_by_customer_id(customer_id)
 
-    subscription = sub.get_subscription_by_id(subscription_id)
+    subscription = sub.get_subscription_by_id(subscription_id[0]["subscription_id"])
     db.close()
 
     if subscription:
