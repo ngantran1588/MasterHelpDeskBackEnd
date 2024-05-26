@@ -289,6 +289,26 @@ class Auth:
             print("Error checking user role:", e)
             return False
         
+    def check_role_access(self, username: str, tab: str) -> bool:
+        try:
+            query = "SELECT role_id FROM tbl_customer WHERE username = %s"
+            values = (username,)
+            result = self.db.execute_query(query, values)
+            if result:
+                roles = result[0][0]
+                for role in roles:
+                    if role == const.ROLE_ID_SUPER_USER:
+                        return True
+                    elif role == tab.lower():
+                        return True
+                    return False
+            else:
+                print("User not found or has no roles.")
+                return False
+        except Exception as e:
+            print("Error checking user role:", e)
+            return False
+        
     def check_user_pass(self, username: str, input_password: str) -> bool:
         try:
             query = "SELECT customer_id, password FROM tbl_customer WHERE username = %s"

@@ -558,7 +558,7 @@ def get_server_info(server_id):
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
@@ -599,6 +599,7 @@ def get_all_proxy(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -614,10 +615,14 @@ def get_all_proxy(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_PROXY):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
@@ -655,6 +660,7 @@ def update_proxy(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -669,11 +675,15 @@ def update_proxy(server_id):
     if server_manager.check_user_access(username, server_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
+
+    if not auth.check_role_access(username, const.TAB_PROXY):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     data = request.json
 
@@ -726,6 +736,7 @@ def add_proxy(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -741,10 +752,14 @@ def add_proxy(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_PROXY):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     data = request.json
 
@@ -792,6 +807,7 @@ def delete_proxy(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -807,10 +823,14 @@ def delete_proxy(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_PROXY):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     data = request.json
 
@@ -865,6 +885,7 @@ def lib_status(server_id):
     db.connect()
     server_manager = Server(db)
     library_db = Library(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -877,6 +898,10 @@ def lib_status(server_id):
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not auth.check_role_access(username, const.TAB_LIB):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -902,6 +927,7 @@ def install_lib(server_id):
     db.connect()
     server_manager = Server(db)
     library_db = Library(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -915,12 +941,16 @@ def install_lib(server_id):
 
     if server_manager.check_user_access(username, server_id) == False:
         db.close()
+        return jsonify({"message": "Permission denied"}), 
+
+    if not auth.check_role_access(username, const.TAB_LIB):
+        db.close()
         return jsonify({"message": "Permission denied"}), 403
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     data = request.get_json()
 
@@ -928,7 +958,7 @@ def install_lib(server_id):
 
     lib_data = library_db.update_library(server_id, library, True)
     if not lib_data:
-        return jsonify({"message":"Can not update library"}, 500)
+        return jsonify({"message":"Can not update library"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"]) 
 
@@ -978,6 +1008,7 @@ def uninstall_lib(server_id):
     db.connect()
     server_manager = Server(db)
     library_db = Library(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -993,17 +1024,21 @@ def uninstall_lib(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_LIB):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     data = request.json
 
     library = data["library"]
     lib_data = library_db.update_library(server_id, library, False)
     if not lib_data:
-        return jsonify({"message":"Can not update library"}, 500)
+        return jsonify({"message":"Can not update library"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
@@ -1052,6 +1087,7 @@ def firewall_action(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1067,10 +1103,14 @@ def firewall_action(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_FIREWALL):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     data = request.json
 
@@ -1090,25 +1130,25 @@ def firewall_action(server_id):
         action_path = os.environ.get("SCRIPT_PATH_ALLOW_IP")
         if not ip or ip == "":
             db.close()
-            return jsonify({"message":"IP required"}, 500)
+            return jsonify({"message":"IP required"}), 500
         arg = ip
     elif action == "allow_port":
         action_path = os.environ.get("SCRIPT_PATH_ALLOW_PORT")
         if not port or port == "":
             db.close()
-            return jsonify({"message":"Port required"}, 500)
+            return jsonify({"message":"Port required"}), 500
         arg = port
     elif action == "deny_ip":
         action_path = os.environ.get("SCRIPT_PATH_DENY_IP")
         if not ip or ip == "":
             db.close()
-            return jsonify({"message":"IP required"}, 500)
+            return jsonify({"message":"IP required"}), 500
         arg = ip
     elif action == "deny_port":
         action_path = os.environ.get("SCRIPT_PATH_DENY_PORT")
         if not port or port == "":
             db.close()
-            return jsonify({"message":"Port required"}, 500)
+            return jsonify({"message":"Port required"}), 500
         arg = port
     elif action == "enable_firewall":
         action_path = os.environ.get("SCRIPT_PATH_ENABLE_FIREWALL")
@@ -1143,6 +1183,7 @@ def firewall_rules(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1158,10 +1199,14 @@ def firewall_rules(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_FIREWALL):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
@@ -1214,6 +1259,7 @@ def docker_build(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1229,10 +1275,14 @@ def docker_build(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_DOCKER):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     data = request.json
 
@@ -1241,7 +1291,7 @@ def docker_build(server_id):
 
     if not dockerfile or not image_tag:
         db.close()
-        return jsonify({"message":"No data for docker build"}, 500)
+        return jsonify({"message":"No data for docker build"}), 500
     
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
@@ -1288,6 +1338,7 @@ def docker_containers(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1303,10 +1354,14 @@ def docker_containers(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_DOCKER):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     data = request.json
 
@@ -1322,7 +1377,7 @@ def docker_containers(server_id):
         return jsonify({"message": "Can not connect server"}), 500
     
     if not container or not action:
-        return jsonify({"message":"No data for container"}, 500)
+        return jsonify({"message":"No data for container"}), 500
 
     docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
     script_directory = os.environ.get("SERVER_DIRECTORY")
@@ -1351,6 +1406,7 @@ def docker_create_containers(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1366,10 +1422,14 @@ def docker_create_containers(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_DOCKER):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     data = request.json
 
@@ -1386,7 +1446,7 @@ def docker_create_containers(server_id):
     
     if not image or not container_name:
         db.close()
-        return jsonify({"message":"No data for container"}, 500)
+        return jsonify({"message":"No data for container"}), 500
 
     docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
     script_directory = os.environ.get("SERVER_DIRECTORY")
@@ -1415,6 +1475,7 @@ def docker_compose(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1430,10 +1491,14 @@ def docker_compose(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_DOCKER):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     data = request.json
 
@@ -1450,7 +1515,7 @@ def docker_compose(server_id):
     
     if not compose_yaml:
         db.close()
-        return jsonify({"message":"No data for docker compose"}, 500)
+        return jsonify({"message":"No data for docker compose"}), 500
 
     docker_path = os.environ.get("SCRIPT_PATH_DOCKER_CONTROL")
     script_directory = os.environ.get("SERVER_DIRECTORY")
@@ -1479,6 +1544,7 @@ def docker_list_images(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1493,10 +1559,14 @@ def docker_list_images(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_DOCKER):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
     
@@ -1547,6 +1617,7 @@ def docker_list_containers(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1561,11 +1632,15 @@ def docker_list_containers(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_DOCKER):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
     server_info = server_manager.get_info_to_connect(server_id)
   
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
@@ -1621,6 +1696,7 @@ def execute_code(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1635,6 +1711,10 @@ def execute_code(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
+    if not auth.check_role_access(username, const.TAB_EXECUTION):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
     data = request.get_json()
 
     execute_file = data.get("execute_file")
@@ -1646,7 +1726,7 @@ def execute_code(server_id):
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
     result = server.connect()
@@ -1690,6 +1770,7 @@ def report_log_syslog(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1704,10 +1785,14 @@ def report_log_syslog(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_LOG):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
     
@@ -1752,6 +1837,7 @@ def report_raw_syslog(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1766,10 +1852,14 @@ def report_raw_syslog(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_LOG):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
@@ -1828,6 +1918,7 @@ def report_log_last(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1842,10 +1933,14 @@ def report_log_last(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_LOG):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
@@ -1892,6 +1987,7 @@ def report_raw_log_last(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1906,10 +2002,14 @@ def report_raw_log_last(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_LOG):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
@@ -1968,6 +2068,7 @@ def report_log_ufw(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1982,10 +2083,14 @@ def report_log_ufw(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_LOG):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
@@ -2030,6 +2135,7 @@ def report_raw_log_ufw(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -2044,10 +2150,14 @@ def report_raw_log_ufw(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    if not auth.check_role_access(username, const.TAB_LOG):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
-        return jsonify({"message":"No data for server"}, 500)
+        return jsonify({"message":"No data for server"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
@@ -2120,6 +2230,7 @@ def upload_file(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
     upload_folder_tmp = os.environ.get("TMP_FOLDER")
     upload_folder_tmp = os.path.join(upload_folder_tmp, server_id)
     
@@ -2141,6 +2252,10 @@ def upload_file(server_id):
         return jsonify({"message": "Permission denied"}), 403
 
     if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    if not auth.check_role_access(username, const.TAB_DATA):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -2196,6 +2311,7 @@ def upload_folder(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
     upload_folder_tmp = os.environ.get("TMP_FOLDER")
     upload_folder_tmp = os.path.join(upload_folder_tmp, server_id)
     
@@ -2217,6 +2333,10 @@ def upload_folder(server_id):
         return jsonify({"message": "Permission denied"}), 403
 
     if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    if not auth.check_role_access(username, const.TAB_DATA):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -2266,6 +2386,7 @@ def download_file(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -2277,6 +2398,10 @@ def download_file(server_id):
         return jsonify({"message": "Permission denied"}), 403
 
     if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    if not auth.check_role_access(username, const.TAB_DATA):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -2333,6 +2458,7 @@ def download_folder(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
+    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -2344,6 +2470,10 @@ def download_folder(server_id):
         return jsonify({"message": "Permission denied"}), 403
 
     if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    if not auth.check_role_access(username, const.TAB_DATA):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -2436,3 +2566,35 @@ def confirm_download(server_id):
     except OSError as e:
         print(f"Error deleting local file: {e}")
         return jsonify({"message": "Upload file failed"}), 500
+
+@server_bp.route("/check_role_access/<server_id>", methods=["GET"])
+@token_required
+def check_role_access(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+    auth = Auth(db)
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server_manager.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    data = request.get_json()
+
+    tab = data["tab"]
+
+    if not auth.check_role_access(username, tab):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    return jsonify({"message": "Access allowed"}), 200
