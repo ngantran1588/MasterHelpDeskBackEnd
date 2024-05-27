@@ -2247,6 +2247,9 @@ def upload_file(server_id):
         return jsonify({"message": "File path is required"}), 400
     filename = uploaded_file.filename
 
+    if dir[-1] != "/":
+        dir = dir + "/"
+        
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     db.connect()
@@ -2325,7 +2328,8 @@ def upload_folder(server_id):
         dir = os.environ.get("DEFAULT_FOLDER")
     if dir == "undefined":
         return jsonify({"message": "File path is required"}), 400
-
+    if dir[-1] != "/":
+        dir = dir + "/"
     filename = uploaded_file.filename
 
     db_env = LoadDBEnv.load_db_env()
