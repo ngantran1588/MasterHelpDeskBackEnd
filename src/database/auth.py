@@ -118,11 +118,6 @@ class Auth:
             print("Error changing role:", e)
 
     def send_otp(self, email: str) -> bool:
-
-        # Check if the email already exists
-        if self.exist_email(email) == False:
-            print("Email does not exist.")
-            return False
         
         # Generate OTP
         otp = self.auth.generate_otp()
