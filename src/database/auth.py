@@ -56,7 +56,7 @@ class Auth:
             VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         role_id = [const.ROLE_ID_USER]
-        status = const.STATUS_INACTIVE
+        status = const.STATUS_ACTIVE
 
         values = (customer_id, username, encrypted_password, full_name, email,
                   role_id, status)
