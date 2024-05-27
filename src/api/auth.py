@@ -114,6 +114,10 @@ def forgot_password():
     data = request.get_json()
     email = data["email"]
 
+    if auth.exist_email(email):
+        db.close()
+        return jsonify({"message": "Email does not exist"}), 404
+
     if auth.send_otp(email):
         db.close()
         return jsonify({"message": "OTP sent successfully"}), 200
@@ -131,6 +135,10 @@ def resend_otp():
     email = data["email"]
 
     auth.delete_otp_email(email)
+
+    if auth.exist_email(email):
+        db.close()
+        return jsonify({"message": "Email does not exist"}), 404
 
     if auth.send_otp(email):
         db.close()
