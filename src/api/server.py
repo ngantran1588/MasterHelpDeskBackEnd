@@ -8,7 +8,6 @@ from ..database import connector
 from ..database.server import Server 
 from ..database.load_env import LoadDBEnv
 from ..database.auth import Auth
-from ..database.library import Library
 from ..const import const
 from ..decorators import token_required
 from ..server_management.server_manager import *
