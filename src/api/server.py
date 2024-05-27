@@ -884,7 +884,6 @@ def lib_status(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    library_db = Library(db)
     auth = Auth(db)
 
     if not server_id:
@@ -905,19 +904,43 @@ def lib_status(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    library_list = ["docker", "mongodb", "nginx", "pip", "postgre", "python"]
-    return_list = []
+    server_info = server_manager.get_info_to_connect(server_id)
+    if server_info == None:
+        db.close()
+        return jsonify({"message":"No data for server"}), 500
     
-    for library in library_list:
-        lib_data = library_db.get_library(server_id, library)
+    server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"]) 
 
-        if not lib_data:
-            library_db.insert_library(server_id, library, False)
-            return_list.append({"library": library, "installed": "False"})
-        else:
-            return_list.append({"library": library, "installed": str(lib_data["installed"])})
+    # Connect to the server
+    result = server.connect()
+    if not result:
+        db.close()
+        return jsonify({"message": "Can not connect server"}), 500
+
+    action_path = os.environ.get("SCRIPT_PATH_LIB_INSTALL")
+
+    script_directory = os.environ.get("SERVER_DIRECTORY")
+    
+    file_name = server.get_file_name(action_path)
+    file_in_server = f"{script_directory}/{file_name}"
+
+    if not server.check_script_exists_on_remote(file_in_server):
+        server.upload_file_to_remote(action_path, script_directory)
+        server.grant_permission(file_in_server, 700)
     db.close()
-    return return_list, 200
+
+    data_return, stderr = server.execute_script_in_remote_server(file_in_server)
+    server.disconnect()
+    if data_return:
+        data_list = []
+        for line in data_return.splitlines():
+            data_dict = json.loads(line)  # Assuming each line is a JSON string
+            data_list.append(data_dict)
+        return data_list, 200
+    if stderr:
+        error_messages = stderr.split("\n")
+        return jsonify({"stderr": error_messages}), 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/install_lib/<server_id>", methods=["POST"])
 @token_required
@@ -926,7 +949,6 @@ def install_lib(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    library_db = Library(db)
     auth = Auth(db)
 
     if not server_id:
@@ -955,10 +977,6 @@ def install_lib(server_id):
     data = request.get_json()
 
     library = data["library"]
-
-    lib_data = library_db.update_library(server_id, library, True)
-    if not lib_data:
-        return jsonify({"message":"Can not update library"}), 500
 
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"]) 
 
@@ -1007,7 +1025,6 @@ def uninstall_lib(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    library_db = Library(db)
     auth = Auth(db)
 
     if not server_id:
@@ -1036,10 +1053,7 @@ def uninstall_lib(server_id):
     data = request.json
 
     library = data["library"]
-    lib_data = library_db.update_library(server_id, library, False)
-    if not lib_data:
-        return jsonify({"message":"Can not update library"}), 500
-
+    
     server = ServerManager(server_info["hostname"], server_info["username"], server_info["password"], server_info["rsa_key"])
 
     # Connect to the server
@@ -1156,6 +1170,14 @@ def firewall_action(server_id):
         action_path = os.environ.get("SCRIPT_PATH_DISABLE_FIREWALL")
     elif action == "reset_firewall":
         action_path = os.environ.get("SCRIPT_PATH_RESET_FIREWALL")
+    elif action == "allow_ssh":
+        action_path = os.environ.get("SCRIPT_PATH_ALLOW_SSH")
+    elif action == "deny_ssh":
+        action_path = os.environ.get("SCRIPT_PATH_DENY_SSH")
+    elif action == "allow_telnet":
+        action_path = os.environ.get("SCRIPT_PATH_ALLOW_TELNET")
+    elif action == "deny_telnet":
+        action_path = os.environ.get("SCRIPT_PATH_DENY_TELNET")
     
     script_directory = os.environ.get("SERVER_DIRECTORY")
     
