@@ -129,7 +129,7 @@ def add_server():
     
     db.close()
     if success:
-        return jsonify({"message": "Server added successfully"}), 201
+        return jsonify({"message": "Server added successfully"}), 200
     else:
         return jsonify({"message": "Failed to add server"}), 500
 
@@ -407,9 +407,9 @@ def get_server_in_organization(organization_id):
     else:
         return jsonify({"message": "No servers found for the organization"}), 404
 
-@server_bp.route("/add_member", methods=["PUT"])
+@server_bp.route("/add_member/<server_id>", methods=["PUT"])
 @token_required
-def add_user():
+def add_member(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     db.connect()
@@ -422,7 +422,6 @@ def add_user():
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
-    server_id = request.json["server_id"]
     new_user = request.json["new_user"]
 
     if not auth.exist_username(new_user):
@@ -432,7 +431,7 @@ def add_user():
     if server.check_user_access(username, server_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    success, msg = server.add_user(server_id, new_user)
+    success, msg = server.add_member(server_id, new_user)
 
     db.close()
 
@@ -441,9 +440,9 @@ def add_user():
     else:
         return jsonify({"message": msg}), 500
 
-@server_bp.route("/remove_member", methods=["PUT"])
+@server_bp.route("/remove_member/<server_id>", methods=["PUT"])
 @token_required
-def remove_user():
+def remove_member(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     db.connect()
@@ -455,14 +454,13 @@ def remove_user():
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
-    server_id = request.json["server_id"]
     remove_username = request.json["remove_username"]
 
     if server.check_user_access(username, server_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    success, msg = server.remove_user(server_id, remove_username)
+    success, msg = server.remove_member(server_id, remove_username)
 
     db.close()
 
@@ -471,6 +469,36 @@ def remove_user():
     else:
         return jsonify({"message": msg}), 500
 
+@server_bp.route("/update_role/<server_id>", methods=["PUT"])
+@token_required
+def update_role(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server = Server(db)
+
+    username = request.jwt_payload.get("username")
+
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    member = request.json["member"]
+    new_roles = request.json["new_roles"]
+
+    if server.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    success, msg = server.update_member_roles(server_id, member, new_roles)
+
+    db.close()
+
+    if success:
+        return jsonify({"message": msg}), 200
+    else:
+        return jsonify({"message": msg}), 500
+    
 @server_bp.route("/get_server_members/<server_id>", methods=["GET"])
 @token_required
 def get_server_members(server_id):
@@ -478,7 +506,6 @@ def get_server_members(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server = Server(db)
-    auth = Auth(db)
 
     username = request.jwt_payload.get("username")
 
@@ -497,13 +524,40 @@ def get_server_members(server_id):
     server_members = server.get_server_members(server_id)
     
     if len(server_members) > 0 :
-        list_member = auth.get_role_of_members(server_members)
-        if list_member == None:
-            db.close()
-            return jsonify({"message": "Error in querying server member"}), 403
         db.close()
-        return jsonify({"members": list_member}), 200
+        return jsonify({"members": server_members}), 200
     db.close()
+    return jsonify({"message": "Server not found or there is no member in server"}), 403
+
+@server_bp.route("/get_server_role/<server_id>", methods=["GET"])
+@token_required
+def get_server_role(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server = Server(db)
+
+    username = request.jwt_payload.get("username")
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    if not server.check_user_access(username, server_id):
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    status, server_role = server.get_roles_server(server_id, username)
+    db.close()
+    if not status:
+        return jsonify({"message": "Error in querying data in database"}), 500
+    
+    if len(server_role) > 0 :
+        return jsonify({"data_return": server_role[0]}), 200
     return jsonify({"message": "Server not found or there is no member in server"}), 403
 
 @server_bp.route("/get_remain_slot/<organization_id>", methods=["GET"])
@@ -613,10 +667,6 @@ def get_all_proxy(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    if not auth.check_role_access(username, const.TAB_PROXY):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -671,10 +721,6 @@ def update_proxy(server_id):
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-
-    if not auth.check_role_access(username, const.TAB_PROXY):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -750,10 +796,6 @@ def add_proxy(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    if not auth.check_role_access(username, const.TAB_PROXY):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -818,10 +860,6 @@ def delete_proxy(server_id):
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_PROXY):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -897,10 +935,6 @@ def lib_status(server_id):
     if server_manager.check_user_access(username, server_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-
-    if not auth.check_role_access(username, const.TAB_LIB):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
@@ -962,10 +996,6 @@ def install_lib(server_id):
     if server_manager.check_user_access(username, server_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 
-
-    if not auth.check_role_access(username, const.TAB_LIB):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
@@ -1039,10 +1069,6 @@ def uninstall_lib(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    if not auth.check_role_access(username, const.TAB_LIB):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -1112,10 +1138,6 @@ def firewall_action(server_id):
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_FIREWALL):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
@@ -1219,10 +1241,6 @@ def firewall_rules(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    if not auth.check_role_access(username, const.TAB_FIREWALL):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -1294,10 +1312,7 @@ def docker_build(server_id):
     if server_manager.check_user_access(username, server_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_DOCKER):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
+ 
     
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
@@ -1374,10 +1389,6 @@ def docker_containers(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    if not auth.check_role_access(username, const.TAB_DOCKER):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -1439,10 +1450,6 @@ def docker_create_containers(server_id):
         return jsonify({"message": "Permission denied"}), 403
 
     if server_manager.check_user_access(username, server_id) == False:
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_DOCKER):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
@@ -1510,11 +1517,7 @@ def docker_compose(server_id):
     if server_manager.check_user_access(username, server_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_DOCKER):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
+ 
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -1579,10 +1582,6 @@ def docker_list_images(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    if not auth.check_role_access(username, const.TAB_DOCKER):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -1649,10 +1648,6 @@ def docker_list_containers(server_id):
         return jsonify({"message": "Permission denied"}), 403
 
     if not server_manager.check_user_access(username, server_id):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_DOCKER):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
@@ -1731,10 +1726,6 @@ def execute_code(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
-    if not auth.check_role_access(username, const.TAB_EXECUTION):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-
     data = request.get_json()
 
     execute_file = data.get("execute_file")
@@ -1805,10 +1796,6 @@ def report_log_history(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
-    if not auth.check_role_access(username, const.TAB_LOG):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -1871,11 +1858,7 @@ def report_raw_history(server_id):
     if not server_manager.check_user_access(username, server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_LOG):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
+
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -1915,7 +1898,7 @@ def report_raw_history(server_id):
         filename = os.environ.get("LOG_HISTORY")
         local_file_path = os.path.join(local_file_path, filename)
 
-        with open(local_file_path, 'w') as f:  # Open the file in write mode ('w')
+        with open(local_file_path, "w", encoding="utf-8") as f:  # Open the file in write mode ('w')
             if isinstance(data_return, str):  # Check if data is a single string
                 f.write(data_return)
             else:  # Assume data is a list of strings
@@ -1952,11 +1935,7 @@ def report_log_last(server_id):
     if not server_manager.check_user_access(username, server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_LOG):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
+
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -2021,11 +2000,7 @@ def report_raw_log_last(server_id):
     if not server_manager.check_user_access(username, server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_LOG):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
+
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -2065,7 +2040,7 @@ def report_raw_log_last(server_id):
         filename = os.environ.get("LOG_LASTLOG")
         local_file_path = os.path.join(local_file_path, filename)
 
-        with open(local_file_path, 'w') as f:  # Open the file in write mode ('w')
+        with open(local_file_path, 'w', encoding="utf-8") as f:  # Open the file in write mode ('w')
             if isinstance(data_return, str):  # Check if data is a single string
                 f.write(data_return)
             else:  # Assume data is a list of strings
@@ -2102,11 +2077,7 @@ def report_log_ufw(server_id):
     if not server_manager.check_user_access(username, server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_LOG):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
+
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -2169,11 +2140,7 @@ def report_raw_log_ufw(server_id):
     if not server_manager.check_user_access(username, server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_LOG):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
+
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -2213,7 +2180,7 @@ def report_raw_log_ufw(server_id):
         filename = os.environ.get("LOG_UFWLOG")
         local_file_path = os.path.join(local_file_path, filename)
 
-        with open(local_file_path, 'w') as f:  # Open the file in write mode ('w')
+        with open(local_file_path, 'w', encoding="utf-8") as f:  # Open the file in write mode ('w')
             if isinstance(data_return, str):  # Check if data is a single string
                 f.write(data_return)
             else:  # Assume data is a list of strings
@@ -2277,11 +2244,7 @@ def upload_file(server_id):
     if not server_manager.check_user_access(username, server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_DATA):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
+ 
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -2359,11 +2322,7 @@ def upload_folder(server_id):
     if not server_manager.check_user_access(username, server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_DATA):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
+ 
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -2424,11 +2383,7 @@ def download_file(server_id):
     if not server_manager.check_user_access(username, server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_DATA):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
+ 
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -2496,11 +2451,7 @@ def download_folder(server_id):
     if not server_manager.check_user_access(username, server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    
-    if not auth.check_role_access(username, const.TAB_DATA):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
+   
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -2590,35 +2541,3 @@ def confirm_download(server_id):
     except OSError as e:
         print(f"Error deleting local file: {e}")
         return jsonify({"message": "Upload file failed"}), 500
-
-@server_bp.route("/check_role_access/<server_id>", methods=["GET"])
-@token_required
-def check_role_access(server_id):
-    db_env = LoadDBEnv.load_db_env()
-    db = connector.DBConnector(*db_env)
-    db.connect()
-    server_manager = Server(db)
-    auth = Auth(db)
-
-    if not server_id:
-        db.close()
-        return jsonify({"message": "Server ID is required."}), 400
-
-    username = request.jwt_payload.get("username")
-    if username is None:
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-
-    if not server_manager.check_user_access(username, server_id):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-    
-    data = request.get_json()
-
-    tab = data["tab"]
-
-    if not auth.check_role_access(username, tab):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-
-    return jsonify({"message": "Access allowed"}), 200
