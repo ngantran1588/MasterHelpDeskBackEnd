@@ -4,6 +4,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import ast
+import json
 from . import connector
 from ..const import const
 from ..models.server import Server as ServerModel
@@ -27,8 +28,6 @@ class Server:
                 username, password, rsa_key, authen_key_time, status, member, port
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        server_member = []
-
         server_id = self.auth.generate_id(server_name)
         status = const.STATUS_ACTIVE
         passphrase = os.environ.get("RSA_PASSPHRASE")
@@ -44,9 +43,10 @@ class Server:
             rsa_key = const.NULL_VALUE
 
         authen_key_time = datetime.now() + timedelta(days=30)
-
-        server_member.append(user_create_server)
-
+        member = {"member": user_create_server, "role": [const.ROLE_ID_SUPER_USER]}
+        
+        server_member = [json.dumps(member)]
+        
         if port == None or port == "":
             port = const.NULL_VALUE
        
@@ -352,91 +352,154 @@ class Server:
             return False
 
     def check_user_access(self, username: str, server_id: str) -> bool:
-        query = """ SELECT COUNT(*) FROM tbl_server WHERE server_id = %s AND  %s = ANY(member) """
-        values = (server_id, username,)
         try:
-            result = self.db.execute_query(query, values)
-            access_granted = result[0][0] > 0
-            return access_granted
+            # Fetch the server's member list
+            select_query = "SELECT member FROM tbl_server WHERE server_id = %s"
+            select_values = (server_id,)
+            current_members = self.db.execute_query(select_query, select_values)
+
+            if not current_members:
+                return False
+            
+            member_data = current_members[0][0]
+
+            current_member_list = [json.loads(member) for member in member_data]
+
+            # Check if user already exists
+            existing_user = next((member for member in current_member_list if member["member"] == username), None)
+            if existing_user:
+                return True
+            return False
         except Exception as e:
             print("Error checking user access:", e)
             return False
-        
-    def add_user(self, server_id: str, new_user: str) -> bool:
-        # Query to fetch the current member list of the server
-        select_query = "SELECT member FROM tbl_server WHERE server_id = %s"
-        select_values = (server_id,)
-        
-        try:
-            # Fetch the current member list from the database
-            current_members = self.db.execute_query(select_query, select_values)
-            if current_members:
-                current_member_list = current_members[0][0]
-                
-                # Check if the new user is already a member of the server
-                if new_user in current_member_list:
-                    print(f"User '{new_user}' already exists in the server.")
-                    return False
-                
-                # Add the new user to the server's member list
-                current_member_list.append(new_user)
 
-                # Update the server's member list in the database
-                update_query = "UPDATE tbl_server SET member = %s WHERE server_id = %s"
-                update_values = (current_member_list, server_id)
-                self.db.execute_query(update_query, update_values)
-
-                msg = "Users added to server successfully!"
-                return True, msg
-            else:
-                msg = "server not found."
-                return False, msg
-        except Exception as e:
-            msg = f"Error adding user(s) to server: {e}"
-            return False, msg
-   
-    def remove_user(self, server_id: str, remove_username: str) -> bool:
+    def add_member(self, server_id: str, new_user: str) -> bool:
         try:
-            # Fetch the current member list of the server from the database
+            # Fetch the server's member list
             select_query = "SELECT member FROM tbl_server WHERE server_id = %s"
             select_values = (server_id,)
-            result = self.db.execute_query(select_query, select_values)
+            current_members = self.db.execute_query(select_query, select_values)
+
+            if not current_members:
+                return False, f"Can not get information from table server"
+
+            # Convert retrieved member list to Python list
+            member_data = current_members[0][0]
+            current_member_list = [json.loads(member) for member in member_data]
+
+            # Check if user already exists
+            existing_user = next((member for member in current_member_list if member["member"] == new_user), None)
+            if existing_user:
+                return False, f"User '{new_user}' already exists in the server."
+
+            # Retrieve user's role from tbl_customer (assuming new_user maps to a customer)
+            user_role_query = "SELECT role_id FROM tbl_customer WHERE username = %s"
+            user_role_values = (new_user,)
+            user_roles = self.db.execute_query(user_role_query, user_role_values)
+
+            # Handle potential errors or no role found in tbl_customer
+            if not user_roles:
+                # Consider using a default role or handling the missing role scenario
+                return False, f"Could not retrieve role for user '{new_user}'."
+
+            # Extract the first role 
+            user_role = user_roles[0][0][0]  
+
+            # Create dictionary for the new user with retrieved role
+            new_user_info = {"member": new_user, "role": [user_role]}
+           
+            # Add the new user to the member list
+            current_member_list.append(new_user_info)
+            current_member_list = [json.dumps(member) for member in current_member_list]
             
-            if result:
-                member_list = result[0][0]
-                creator_username = member_list[0]
-                
-                # Check if the user to be removed is the creator of the server
-                if remove_username == creator_username:
-                    msg = "Cannot remove the creator of the server."
-                    return False, msg
-                
-                # Check if the member list will have at least one member after removal
-                if len(member_list) == 1:
-                    msg = "Cannot remove the last member of the server."
-                    return False, msg
-                
-                # Check if the user to be removed is in the member list
-                if remove_username not in member_list:
-                    msg = f"User '{remove_username}' is not a member of the server."
-                    return False, msg
-                
-                # Remove the user from the member list
-                member_list.remove(remove_username)
-                
-                # Update the member list in the database
-                update_query = "UPDATE tbl_server SET member = %s WHERE server_id = %s"
-                update_values = (member_list, server_id)
-                self.db.execute_query(update_query, update_values)
-                
-                msg = "User removed from server successfully!"
-                return True, msg
-            else:
-                msg = "server not found."
-                return False, msg
+            # Update the server's member list in the database
+            update_query = "UPDATE tbl_server SET member = %s WHERE server_id = %s"
+            update_values = (current_member_list, server_id)
+            self.db.execute_query(update_query, update_values)
+
+            return True, f"User '{new_user}' added to server successfully!"
+
         except Exception as e:
-            msg = f"Error removing user from server:{e}"
-            return False, msg
+            return False, f"Error adding user to server: {e}"
+
+    def remove_member(self, server_id: str, remove_username: str) -> bool:
+        try:
+            # Fetch the server's member list
+            select_query = "SELECT member FROM tbl_server WHERE server_id = %s"
+            select_values = (server_id,)
+            current_members = self.db.execute_query(select_query, select_values)
+
+            if not current_members:
+                # Server not found
+                return False, f"Can not get information from table server"
+            
+            member_data = current_members[0][0]
+            member_list = [json.loads(member) for member in member_data]
+
+            # Check if user to be removed is the creator
+            if len(member_list) > 1: 
+                creator_username = member_list[0]["member"] 
+                if remove_username == creator_username:
+                    return False, f"Cannot remove the creator of the server."
+
+            # Check if the user to be removed is in the member list
+            if remove_username not in [member["member"] for member in member_list]:  
+                return False, f"User '{remove_username}' is not a member of the server."
+
+            # Remove the user from the member list
+            for member in member_list:
+                if member["member"] == remove_username:
+                    member_list.remove(member)
+                    break  
+            
+            member_list = [json.dumps(member) for member in member_list]
+            # Update the member list in the database
+            update_query = "UPDATE tbl_server SET member = %s WHERE server_id = %s"
+            update_values = (member_list, server_id)
+            self.db.execute_query(update_query, update_values)
+
+            return True, f"User '{remove_username}' removed from server successfully!"
+
+        except Exception as e:
+            return False, f"Error removing user from server: {e}"
+        
+    def update_member_roles(self, server_id: str, username: str, new_roles: list[str]) -> bool:
+        try:
+            # Fetch the server's member list
+            select_query = "SELECT member FROM tbl_server WHERE server_id = %s"
+            select_values = (server_id,)
+            current_members = self.db.execute_query(select_query, select_values)
+
+            if not current_members:
+                return False, f"Can not get information from table server"
+
+            # Convert retrieved member list to Python list
+            member_data = current_members[0][0]
+            member_list = [json.loads(member) for member in member_data]
+
+            # Find the member to update
+            member_to_update = next((member for member in member_list if member["member"] == username), None)
+            if not member_to_update:
+                return False, f"User '{username}' not found in the server."
+
+            origin_role = member_to_update["role"][0]
+            update_roles = [origin_role]
+            for role in new_roles:
+                update_roles.append(role)
+            member_to_update["role"] = update_roles
+
+            # Update the server's member list in the database
+            member_list = [json.dumps(member) for member in member_list]
+            
+            update_query = "UPDATE tbl_server SET member = %s WHERE server_id = %s"
+            update_values = (member_list, server_id)
+            self.db.execute_query(update_query, update_values)
+
+            return True, f"Roles for user '{username}' updated successfully!"
+
+        except Exception as e:
+            return False, f"Error updating roles for user: {e}"
         
     def get_info_to_connect(self, server_id: str):
         query = "SELECT hostname, username, password, rsa_key FROM tbl_server WHERE server_id = %s"
@@ -470,6 +533,31 @@ class Server:
             print("Error getting server info:", e)
             return False
         
+    def get_role_names(self, role_ids: list[str]) -> dict[str, str]:
+        query = "SELECT role_id, role_name FROM tbl_role WHERE role_id IN %s"
+        values = (tuple(role_ids),)  # Convert list to tuple for parameterized query
+
+        # Execute the query and fetch results
+        role_names = self.db.execute_query(query, values)
+
+        # Create a dictionary for mapping
+        role_name_map = {row[0]: row[1] for row in role_names}  # {role_id: role_name}
+
+        return role_name_map
+
+    def update_member_list_with_role_names(self, member_list: list[dict]) -> list[dict]:
+        all_role_ids = [role for member in member_list for role in member["role"]]  # Extract all role IDs
+        role_names_map = self.get_role_names(all_role_ids)
+
+        for member in member_list:
+            member_role_names = []
+            for role_id in member["role"]:
+                member_role_names.append(role_names_map.get(role_id))  # Get names for each role ID
+
+            member["role_name"] = member_role_names  # Add list of role names
+
+        return member_list
+
     def get_server_members(self, server_id: str) -> list:
         # Query to fetch the current member list of the server
         select_query = "SELECT member FROM tbl_server WHERE server_id = %s"
@@ -478,10 +566,37 @@ class Server:
         try:
             # Fetch the current member list from the database
             current_members = self.db.execute_query(select_query, select_values)
+            member_data = current_members[0][0]
+            member_list = [json.loads(member) for member in member_data]
             if current_members:
-                return current_members[0][0]
+                return self.update_member_list_with_role_names(member_list)
             else:
                 return []  # Return an empty list if server not found or no members
         except Exception as e:
             print(f"Error fetching server members: {e}")
             return []
+        
+    def get_roles_server(self, server_id: str, username: str):
+        try:
+            # Fetch the server's member list
+            select_query = "SELECT member FROM tbl_server WHERE server_id = %s"
+            select_values = (server_id,)
+            current_members = self.db.execute_query(select_query, select_values)
+
+            if not current_members:
+                return False, f"Can not get information from table server"
+
+            # Convert retrieved member list to Python list
+            member_data = current_members[0][0]
+            member_list = [json.loads(member) for member in member_data]
+
+            # Find the member to update
+            member = next((member for member in member_list if member["member"] == username), None)
+            if not member:
+                return False, f"User '{username}' not found in the server."
+            
+            role = self.update_member_list_with_role_names([member])
+            return True, role
+
+        except Exception as e:
+            return False, f"Error updating roles for user: {e}"
