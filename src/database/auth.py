@@ -101,22 +101,6 @@ class Auth:
         except Exception as e:
             print("Error changing role:", e)
 
-    def change_role(self, username: str, role_id: list[str]) -> bool:
-        query = "SELECT role_id from tbl_customer WHERE username = %s"
-        value = (username,)
-        result = self.db.execute_query(query, value)
-        new_role_id = [result[0][0]]
-        new_role_id.append(role_id)
-
-        try:
-            query = "UPDATE tbl_customer SET role_id = %s WHERE username = %s"
-            values = (new_role_id, username)
-
-            self.db.execute_query(query, values)
-            return "Update role successfully", True
-        except Exception as e:
-            print("Error changing role:", e)
-
     def send_otp(self, email: str) -> bool:
         
         # Generate OTP
@@ -277,26 +261,6 @@ class Auth:
             result = self.db.execute_query(query, values)
             if result:
                 return const.ROLE_ID_SUPER_USER == result[0][0][0]
-            else:
-                print("User not found or has no roles.")
-                return False
-        except Exception as e:
-            print("Error checking user role:", e)
-            return False
-        
-    def check_role_access(self, username: str, tab: str) -> bool:
-        try:
-            query = "SELECT role_id FROM tbl_customer WHERE username = %s"
-            values = (username,)
-            result = self.db.execute_query(query, values)
-            if result:
-                roles = result[0][0]
-                for role in roles:
-                    if role == const.ROLE_ID_SUPER_USER:
-                        return True
-                    elif role == tab.lower():
-                        return True
-                    return False
             else:
                 print("User not found or has no roles.")
                 return False
