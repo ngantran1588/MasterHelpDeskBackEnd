@@ -1784,9 +1784,9 @@ def execute_code(server_id):
         error_messages = stderr.split("\n")
     return jsonify({"lines": lines, "stderr": error_messages}), 200
 
-@server_bp.route("/report_log_syslog/<server_id>", methods=["POST"])
+@server_bp.route("/report_log_history/<server_id>", methods=["POST"])
 @token_required
-def report_log_syslog(server_id):
+def report_log_history(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     db.connect()
@@ -1822,7 +1822,7 @@ def report_log_syslog(server_id):
         db.close()
         return jsonify({"message": "Can not connect server"}), 500
     
-    execute_code_path = os.environ.get("SCRIPT_PATH_LOG_SYSLOG")
+    execute_code_path = os.environ.get("SCRIPT_PATH_LOG_HISTORY")
     script_directory = os.environ.get("SERVER_DIRECTORY")
     
     file_name = server.get_file_name(execute_code_path)
@@ -1851,9 +1851,9 @@ def report_log_syslog(server_id):
         return jsonify({"stderr": error_messages}), 500
     return jsonify({"message": "Something is wrong"}), 404
 
-@server_bp.route("/report_raw_syslog/<server_id>", methods=["GET"])
+@server_bp.route("/report_raw_history/<server_id>", methods=["GET"])
 @token_required
-def report_raw_syslog(server_id):
+def report_raw_history(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     db.connect()
@@ -1889,7 +1889,7 @@ def report_raw_syslog(server_id):
         db.close()
         return jsonify({"message": "Can not connect server"}), 500
     
-    execute_code_path = os.environ.get("SCRIPT_PATH_LOG_SYSLOG")
+    execute_code_path = os.environ.get("SCRIPT_PATH_LOG_HISTORY")
     script_directory = os.environ.get("SERVER_DIRECTORY")
     
     file_name = server.get_file_name(execute_code_path)
