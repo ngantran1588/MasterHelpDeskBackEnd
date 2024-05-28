@@ -40,9 +40,10 @@ class ServerManager:
         try:
             # Construct the full path of the script on the server
             script_full_path = f"{script_relative_path} {' '.join(args)}"
-
-            # Execute script on the remote server
+            
             stdin, stdout, stderr = self.client.exec_command(f"bash {script_full_path}")
+            # Execute script on the remote server
+            
             stdout.channel.recv_exit_status()
             stderr.channel.recv_stderr_ready()
 

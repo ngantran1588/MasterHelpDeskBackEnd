@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from ..database import connector
 from ..database.auth import Auth
+from ..database.role import Role
 from ..database.load_env import LoadDBEnv
 from ..database.blacklist_token import BlackListToken
 from datetime import datetime, timedelta, timezone
@@ -19,6 +20,7 @@ def login():
     db = connector.DBConnector(*db_env)
     db.connect()
     auth = Auth(db)
+    role = Role(db)
     data = request.get_json()
     username = data.get("username")
     password = data.get("password")
@@ -35,8 +37,15 @@ def login():
     if auth.login(username, password):
         payload = {"username": username, "exp": datetime.now(timezone.utc) + timedelta(minutes=45)}
         token = jwt.encode(payload, os.environ.get("JWT_SECRET_KEY"), algorithm="HS256")
+        role_id = auth.get_role_by_username(username)
+        list_role = []
+        for e in role_id:
+            role_name = role.get_role_name_by_id(e)
+            if role_name == None:
+                return jsonify({"message": "Error in querying role"}), 500
+            list_role.append(role_name)
         db.close()
-        return jsonify({"message": "Login successful", "access_token": token}), 200
+        return jsonify({"message": "Login successful", "access_token": token, "role": list_role}), 200
     else:
         db.close()
         return jsonify({"message": "Invalid credentials"}), 401
@@ -68,8 +77,18 @@ def sign_up():
     auth = Auth(db)
     data = request.get_json()
     email = data["email"]
+    username = data["username"]
+
+    if auth.exist_username(username):
+        db.close()
+        return jsonify({"message": "Email existed"}), 500      
+
+    if auth.exist_email(email):
+        db.close()
+        return jsonify({"message": "Email existed"}), 500      
     
     if auth.send_otp(email):
+        db.close()
         return jsonify({"message": "Send OTP successfully"}), 200
     else:
         db.close()

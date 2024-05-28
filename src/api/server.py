@@ -18,21 +18,20 @@ server_bp = Blueprint("server", __name__)
 def secure_filename(filename):
   return filename.replace("\\", "").replace("/", "")
 
-def parse_syslog_regex(log_message):
+def parse_history_regex(log_message):
     # Regex pattern to capture timestamp (flexible on separators) and host
-    pattern = r"(\w+\s\d+\s\d+:\d+:\d+)(\s\S+)(\s(kernel)?(systemd)?.*)"
+    pattern = r"((\s+)?\d+)(\s+.*)"
 
     # Match the pattern and extract groups
     match = re.match(pattern, log_message)
     if match:
         # Extract timestamp (handle cases with or without separators)
-        timestamp = match.groups(1)[0]
-        host = (match.groups(1)[1]).strip()
-        log = (match.groups(1)[2]).strip()
+        no = (match.groups(1)[0]).strip()
+        command_line = (match.groups(1)[2]).strip()
     else:
-        return None, None, None
+        return None, None
 
-    return timestamp, host, log
+    return no, command_line
 
 def parse_ufwlog_regex(log_message):
     # Regex pattern to capture timestamp (flexible on separators) and host
@@ -1784,9 +1783,9 @@ def execute_code(server_id):
         error_messages = stderr.split("\n")
     return jsonify({"lines": lines, "stderr": error_messages}), 200
 
-@server_bp.route("/report_log_syslog/<server_id>", methods=["POST"])
+@server_bp.route("/report_log_history/<server_id>", methods=["POST"])
 @token_required
-def report_log_syslog(server_id):
+def report_log_history(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     db.connect()
@@ -1822,7 +1821,7 @@ def report_log_syslog(server_id):
         db.close()
         return jsonify({"message": "Can not connect server"}), 500
     
-    execute_code_path = os.environ.get("SCRIPT_PATH_LOG_SYSLOG")
+    execute_code_path = os.environ.get("SCRIPT_PATH_LOG_HISTORY")
     script_directory = os.environ.get("SERVER_DIRECTORY")
     
     file_name = server.get_file_name(execute_code_path)
@@ -1840,20 +1839,20 @@ def report_log_syslog(server_id):
         lines.remove("")
         parsed_log = []
         for line in lines:
-            timestamp, host, log = parse_syslog_regex(line)
-            if timestamp == None or host == None or log == None:
+            no, command_line = parse_history_regex(line)
+            if no == None or command_line == None:
                 return jsonify({"message": "Error in parsing log"}), 500
             
-            parsed_log.append({"timestamp": timestamp, "host": host, "log": log})
+            parsed_log.append({"no": no, "command_line": command_line})
         return jsonify({"parsed_log": parsed_log}), 200
     if stderr:
         error_messages = stderr.split("\n")
         return jsonify({"stderr": error_messages}), 500
     return jsonify({"message": "Something is wrong"}), 404
 
-@server_bp.route("/report_raw_syslog/<server_id>", methods=["GET"])
+@server_bp.route("/report_raw_history/<server_id>", methods=["GET"])
 @token_required
-def report_raw_syslog(server_id):
+def report_raw_history(server_id):
     db_env = LoadDBEnv.load_db_env()
     db = connector.DBConnector(*db_env)
     db.connect()
@@ -1889,7 +1888,7 @@ def report_raw_syslog(server_id):
         db.close()
         return jsonify({"message": "Can not connect server"}), 500
     
-    execute_code_path = os.environ.get("SCRIPT_PATH_LOG_SYSLOG")
+    execute_code_path = os.environ.get("SCRIPT_PATH_LOG_HISTORY")
     script_directory = os.environ.get("SERVER_DIRECTORY")
     
     file_name = server.get_file_name(execute_code_path)
@@ -1913,7 +1912,7 @@ def report_raw_syslog(server_id):
             else:
                 print(f"Error creating folder: {e}")
         
-        filename = os.environ.get("LOG_SYSLOG")
+        filename = os.environ.get("LOG_HISTORY")
         local_file_path = os.path.join(local_file_path, filename)
 
         with open(local_file_path, 'w') as f:  # Open the file in write mode ('w')
