@@ -48,6 +48,20 @@ class Role:
         except Exception as e:
             print(f"Error getting role with ID {role_id}:", e)
 
+    def get_role_name_by_id(self, role_id):
+        query = """SELECT role_name FROM tbl_role WHERE role_id = %s"""
+        values = (role_id,)
+
+        try:
+            result = self.db.execute_query(query, values)
+            if len(result) == 0:
+                return None
+            role_info = result[0][0]
+            
+            return role_info
+        except Exception as e:
+            print(f"Error getting role with ID {role_id}:", e)
+
     def generate_id(self) -> str:
         query = """SELECT MAX(role_id) FROM tbl_role"""
       
