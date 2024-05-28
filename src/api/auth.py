@@ -45,7 +45,7 @@ def login():
                 return jsonify({"message": "Error in querying role"}), 500
             list_role.append(role_name)
         db.close()
-        return jsonify({"message": "Login successful", "access_token": token, "role": role}), 200
+        return jsonify({"message": "Login successful", "access_token": token, "role": list_role}), 200
     else:
         db.close()
         return jsonify({"message": "Invalid credentials"}), 401
