@@ -85,12 +85,16 @@ def handle_transaction():
                 db.close()
                 return jsonify({"message": "Error in updating database"}), 500
             org.change_organization_status(organization_id, const.STATUS_ACTIVE)
+            db.close()
+            return jsonify({"message": "Billing successful"}), 204
         else:
             subscription_id = subscription.add_subscription(subscription_name, extra_data["customer_id"], package_info["package_id"], expiration_time, False)
             if subscription_id != None:
                 billing.update_success_transaction(billing_id, const.BILLING_STATUS_SUCCESS, subscription_id)
                 db.close()
                 return jsonify({"message": "Billing successful"}), 204
+            db.close()
+            return jsonify({"message": "Billing failed"}), 500
     else:
         billing.update_billing_status(billing_id, const.BILLING_STATUS_FAIL)
         db.close()
