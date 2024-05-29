@@ -64,7 +64,6 @@ def check_expiration():
     subscription_info = sub.get_subscriptions_by_customer_id(customer_id)
     subscription_id = subscription_info[0]["subscription_id"]
     subscription = sub.get_subscription_by_id(subscription_id)
-    db.close()
 
     if subscription:
         expiration_date = datetime.fromisoformat(subscription["expiration_date"])
@@ -73,12 +72,16 @@ def check_expiration():
             auth.change_role_to_user(username)
             organization_id = org.get_organization_id_by_sub(subscription_id)
             if not organization_id:
+                db.close()
                 return jsonify({"message": "Error in querying database."}), 500
             result = org.change_organization_status(organization_id)
             if not result:
+                db.close()
                 return jsonify({"message": "Error in querying database."}), 500
+        db.close()
         return jsonify({"message": expiration_msg, "status": status}), 200
     else:
+        db.close()
         return jsonify({"message": "Subscription not found."}), 404
 
 @subscription_bp.route("/check_expiration_by_id/<subscription_id>", methods=["GET"])

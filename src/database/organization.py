@@ -221,19 +221,20 @@ class Organization:
     def get_remain_slot(self, username: str):
         try:
             total_slot = self.get_total_slot(username)
-            if not total_slot:
-                print("Error checking remain_slot")
-                return False
+            if total_slot is None:
+                print("Error checking total slot")
+                return None
             
             current_slot = self.get_current_slot(username)
-            if not current_slot:
-                print("Error checking remain_slot")
-                return False
+            
+            if current_slot is None:
+                print("Error checking remain slot")
+                return None
             remain_slot = total_slot - current_slot
             return remain_slot
         except Exception as e:
             print("Error checking organization slot:", e)
-            return False
+            return None
 
     def check_organization_slot(self, username: str):
         try:
@@ -261,7 +262,7 @@ class Organization:
             query_count_org = "SELECT COUNT(*) FROM tbl_organization WHERE customer_id = %s"
             values_count_org = (customer_id,)
             current_slot = self.db.execute_query(query_count_org, values_count_org)[0][0]
-        
+            
             return current_slot 
         except Exception as e:
             print("Error checking current organization slot:", e)
