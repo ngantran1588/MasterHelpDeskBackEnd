@@ -3,6 +3,7 @@ from datetime import datetime
 from ..database.load_env import LoadDBEnv
 from ..database.subscription import Subscription
 from ..database.auth import Auth
+from ..database.organization import Organization
 from ..database import connector
 from ..decorators import token_required
 
@@ -50,6 +51,7 @@ def check_expiration():
     db = connector.DBConnector(*db_env)
     db.connect()
     sub = Subscription(db)
+    org = Organization(db)
     auth = Auth(db)
 
     username = request.jwt_payload.get("username")
@@ -59,14 +61,22 @@ def check_expiration():
 
     customer_id = auth.get_customer_id_from_username(username) 
 
-    subscription_id = sub.get_subscriptions_by_customer_id(customer_id)
-
-    subscription = sub.get_subscription_by_id(subscription_id[0]["subscription_id"])
+    subscription_info = sub.get_subscriptions_by_customer_id(customer_id)
+    subscription_id = subscription_info[0]["subscription_id"]
+    subscription = sub.get_subscription_by_id(subscription_id)
     db.close()
 
     if subscription:
         expiration_date = datetime.fromisoformat(subscription["expiration_date"])
         expiration_msg, status = sub.check_expiration(expiration_date)
+        if status:
+            auth.change_role_to_user(username)
+            organization_id = org.get_organization_id_by_sub(subscription_id)
+            if not organization_id:
+                return jsonify({"message": "Error in querying database."}), 500
+            result = org.change_organization_status(organization_id)
+            if not result:
+                return jsonify({"message": "Error in querying database."}), 500
         return jsonify({"message": expiration_msg, "status": status}), 200
     else:
         return jsonify({"message": "Subscription not found."}), 404

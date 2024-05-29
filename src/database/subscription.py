@@ -49,6 +49,14 @@ class Subscription:
         except Exception as e:
             print("Error updating subscription status:", e)
 
+    def update_subscription(self, subscription_id: str, subscription_type: str, expiration_date: datetime, new_status: str) -> None:
+        try:
+            query = "UPDATE tbl_subscription SET subscription_status = %s, subscription_type = %s, expiration_date = %s WHERE subscription_id = %s"
+            values = (new_status, subscription_type, expiration_date, subscription_id)
+            self.db.execute_query(query, values)
+            print("Subscription status updated successfully.")
+        except Exception as e:
+            print("Error updating subscription status:", e)
     def check_expiration(self, expiration_date: datetime) -> str:
         expiration_date = expiration_date.astimezone(timezone.utc)
 
@@ -58,7 +66,7 @@ class Subscription:
                 return "2 days left for renewal", False
             elif time_diff.days == 1:
                 return "1 day left for renewal", False
-            elif time_diff.days <= 0:
+            elif time_diff.min <= 0:
                 return "Subscription expired", True
             else:
                 return "Subscription active", False

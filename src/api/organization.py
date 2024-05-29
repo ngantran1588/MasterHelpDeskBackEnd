@@ -131,7 +131,6 @@ def change_organization_status():
     else:
         return jsonify({"message": "Failed to change organization status"}), 500
     
-
 @organization_bp.route("/update_information", methods=["PUT"])
 @token_required
 def update_organization_information():
@@ -364,7 +363,6 @@ def get_user_in_organization(organization_id):
     else:
         return jsonify({"message": "Failed to get users and roles"}), 500
     
-
 @organization_bp.route("/get_remain_slot", methods=["GET"])
 @token_required
 def get_remain_slot():
