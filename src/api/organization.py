@@ -371,7 +371,6 @@ def get_remain_slot():
     db = connector.DBConnector(*db_env)
     db.connect()
     org = Organization(db)
-    auth = Auth(db)
 
     username = request.jwt_payload.get("username")
     if username is None:
