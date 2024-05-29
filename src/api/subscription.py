@@ -5,6 +5,7 @@ from ..database.subscription import Subscription
 from ..database.auth import Auth
 from ..database.organization import Organization
 from ..database import connector
+from ..const import const
 from ..decorators import token_required
 
 subscription_bp = Blueprint("subscription", __name__)
@@ -74,7 +75,7 @@ def check_expiration():
             if not organization_id:
                 db.close()
                 return jsonify({"message": "Error in querying database."}), 500
-            result = org.change_organization_status(organization_id)
+            result = org.change_organization_status(organization_id, const.STATUS_INACTIVE)
             if not result:
                 db.close()
                 return jsonify({"message": "Error in querying database."}), 500
