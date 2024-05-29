@@ -483,8 +483,7 @@ class Server:
             if not member_to_update:
                 return False, f"User '{username}' not found in the server."
 
-            origin_role = member_to_update["role"][0]
-            update_roles = [origin_role]
+            update_roles = []
             for role in new_roles:
                 update_roles.append(role)
             member_to_update["role"] = update_roles

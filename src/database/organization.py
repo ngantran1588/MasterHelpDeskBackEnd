@@ -104,12 +104,16 @@ class Organization:
             return False
 
     def change_organization_status(self, organization_id: str, status: str) -> bool:
-        query = """UPDATE tbl_organization SET organization_status = %s WHERE organization_id = %s"""
-        if status == const.STATUS_INACTIVE:
-            values = (const.STATUS_INACTIVE, organization_id)
-        else :
-            values = (const.STATUS_ACTIVE, organization_id)
         try:
+            query = """UPDATE tbl_organization SET organization_status = %s WHERE organization_id = %s"""
+            if status.upper() == const.STATUS_INACTIVE:
+                status = const.STATUS_INACTIVE
+                query_server = """UPDATE tbl_server SET status = %s WHERE organization_id = %s""" 
+                value_server = (status, organization_id)
+                self.db.execute_query(query_server, value_server)
+            elif status.upper() == const.STATUS_ACTIVE:
+                status = const.STATUS_ACTIVE
+            values = (status, organization_id)
             self.db.execute_query(query, values)
             print("Organization status changed successfully!")
             return True
@@ -374,3 +378,18 @@ class Organization:
             return role_names
         except Exception as e:
             print("Error getting user roles:", e)
+
+    def get_organization_id_by_sub(self, subscription_id: str) :
+        query = """SELECT organization_id FROM tbl_organization WHERE subscription_id = %s"""
+        values = (subscription_id)
+
+        try:
+            result = self.db.execute_query(query, values)
+            print("Query organization successful!")
+            if len(result) == 0:
+                return None
+            organization_info = result[0][0]
+               
+            return organization_info    
+        except Exception as e:
+            print("Error querying organization:", e)
