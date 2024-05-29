@@ -299,6 +299,7 @@ def delete_organization(organization_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     org = Organization(db)
+    auth = Auth(db)
 
     if not organization_id:
         db.close()
@@ -314,6 +315,10 @@ def delete_organization(organization_id):
         db.close()
         return jsonify({"message": "Organization ID is missing"}), 400
 
+    if auth.check_role(username) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
     # Check if the user has access to delete the organization
     if not org.check_user_access(username, organization_id):
         db.close()
@@ -350,10 +355,6 @@ def get_user_in_organization(organization_id):
     if organization_id is None:
         db.close()
         return jsonify({"message": "Organization ID is required"}), 400
-    
-    if auth.check_role(username) is False:
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
 
     users_and_roles = org.get_user_organization(organization_id)
     db.close()
