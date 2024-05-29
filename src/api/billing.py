@@ -5,6 +5,7 @@ from ..database.load_env import LoadDBEnv
 from ..database.billing import Billing
 from ..database.auth import Auth
 from ..database.package import Package
+from ..database.organization import Organization
 from ..database.subscription import Subscription
 from ..database import connector
 from ..const import const
@@ -53,6 +54,7 @@ def handle_transaction():
     subscription = Subscription(db)
     package = Package(db)
     auth = Auth(db)
+    org = Organization(db)
 
     data = request.get_json()
 
@@ -69,13 +71,26 @@ def handle_transaction():
     expiration_time = datetime.now(timezone.utc) + timedelta(days=int(package_info["duration"]))
     
     if result_code == 0:
-        subscription_id = subscription.add_subscription(subscription_name, extra_data["customer_id"], package_info["package_id"], expiration_time, False)
-        if subscription_id != None:
-            username = auth.get_username_from_customer_id(extra_data["customer_id"])
-            auth.change_role_to_superuser(username)
-            billing.update_success_transaction(billing_id, const.BILLING_STATUS_SUCCESS, subscription_id)
-            db.close()
-            return jsonify({"message": "Billing successful"}), 204
+        customer_id = extra_data["customer_id"]
+        username = auth.get_username_from_customer_id(customer_id)
+        auth.change_role_to_superuser(username)
+
+        exist_sub = subscription.get_subscriptions_by_customer_id(customer_id)
+
+        if exist_sub and len(exist_sub) > 0:
+            subscription_id = exist_sub[0]["subscription_id"]
+            subscription.update_subscription(subscription_id, package_info["package_id"], expiration_time, const.STATUS_ACTIVE)
+            organization_id = org.get_organization_id_by_sub(subscription_id)
+            if not organization_id:
+                db.close()
+                return jsonify({"message": "Error in updating database"}), 500
+            org.change_organization_status(organization_id, const.STATUS_ACTIVE)
+        else:
+            subscription_id = subscription.add_subscription(subscription_name, extra_data["customer_id"], package_info["package_id"], expiration_time, False)
+            if subscription_id != None:
+                billing.update_success_transaction(billing_id, const.BILLING_STATUS_SUCCESS, subscription_id)
+                db.close()
+                return jsonify({"message": "Billing successful"}), 204
     else:
         billing.update_billing_status(billing_id, const.BILLING_STATUS_FAIL)
         db.close()
