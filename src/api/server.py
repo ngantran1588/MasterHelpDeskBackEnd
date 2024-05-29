@@ -1424,7 +1424,7 @@ def docker_containers(server_id):
     server.disconnect()
     if data_return:
         data_return = data_return.split("\n")
-        return jsonify({"lines": data_return})
+        return jsonify({"lines": data_return}), 200
     if stderr:
         error_messages = stderr.split("\n")
         return jsonify({"stderr": error_messages}), 500
@@ -1711,7 +1711,6 @@ def execute_code(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1765,13 +1764,16 @@ def execute_code(server_id):
         lines.remove("")
     else:
         lines = None
-    if not stderr and not data_return:
-        return jsonify({"message":"Can not execute code on server"}), 500
+    
     if stderr:
         error_messages = stderr.split("\n")
-        return jsonify({"lines": lines, "stderr": error_messages}), 200
-    return jsonify({"message":"Can not execute code on server"}), 500
+    else:
+        error_messages = None
 
+    if lines is None and stderr is None:
+        return jsonify({"message":"Can not execute code on server"}), 500
+    return jsonify({"lines": lines, "stderr": error_messages}), 200
+    
 @server_bp.route("/report_log_history/<server_id>", methods=["POST"])
 @token_required
 def report_log_history(server_id):

@@ -62,7 +62,7 @@ class Server:
         passphrase = os.environ.get("RSA_PASSPHRASE")
         encrypted_password_key = self.encrypt_rsa_key(passphrase.encode(), server_id.encode(), password)
         query = "UPDATE tbl_server SET password = %s WHERE server_id = %s"
-        values = (encrypted_password_key, server_id)
+        values = (str(encrypted_password_key), server_id)
         try:
             self.db.execute_query(query, values)
             new_authen_key_time = datetime.now() + timedelta(days=30)
@@ -76,7 +76,7 @@ class Server:
         passphrase = os.environ.get("RSA_PASSPHRASE")
         encrypted_rsa_key = self.encrypt_rsa_key(passphrase.encode(), server_id.encode(), new_rsa_key)
         query = "UPDATE tbl_server SET rsa_key = %s WHERE server_id = %s"
-        values = (encrypted_rsa_key, server_id)
+        values = (str(encrypted_rsa_key), server_id)
         try:
             self.db.execute_query(query, values)
             new_authen_key_time = datetime.now() + timedelta(days=30)
@@ -508,11 +508,14 @@ class Server:
             passphrase = os.environ.get("RSA_PASSPHRASE")
             if result[0][2] != const.NULL_VALUE:
                 pass_from_db = result[0][2]
+                print(pass_from_db)
                 pass_encrypted = ast.literal_eval(pass_from_db)
+                print(pass_encrypted)
                 password = self.decrypt_rsa_key(passphrase.encode(), server_id.encode(), pass_encrypted)
+                print(password)
             else:
                 password = None
-
+            print(password)
             if result[0][3] != const.NULL_VALUE:
                 rsa_key_from_db = result[0][3]
                 rsa_key_encrypted = ast.literal_eval(rsa_key_from_db)
@@ -530,7 +533,7 @@ class Server:
             return server
         except Exception as e:
             print("Error getting server info:", e)
-            return False
+            return None
         
     def get_role_names(self, role_ids: list[str]) -> dict[str, str]:
         query = "SELECT role_id, role_name FROM tbl_role WHERE role_id IN %s"

@@ -30,7 +30,7 @@ def login():
         return jsonify({"message": "Login successful", "access_token": token}), 200
     else:
         db.close()
-        return jsonify({'message': 'Invalid credentials'}), 401
+        return jsonify({'message': 'Invalid credentials'}), 403
 
 
 @manager_bp.route("/logout", methods=["POST"])

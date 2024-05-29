@@ -85,6 +85,7 @@ def handle_transaction():
                 db.close()
                 return jsonify({"message": "Error in updating database"}), 500
             org.change_organization_status(organization_id, const.STATUS_ACTIVE)
+            billing.update_billing_status(billing_id, const.BILLING_STATUS_SUCCESS)
             db.close()
             return jsonify({"message": "Billing successful"}), 204
         else:
