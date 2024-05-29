@@ -376,9 +376,6 @@ def get_remain_slot():
     if username is None:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
-    if auth.check_role(username) is False:
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
 
     remain_slot = org.get_remain_slot(username)
     db.close()
