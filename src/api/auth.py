@@ -28,10 +28,10 @@ def login():
         return jsonify({"message": "Missing required fields"}), 400
     
     if not auth.exist_username(username):
-        return jsonify({"message": "Your account is not exist"}), 401
+        return jsonify({"message": "Your account is not exist"}), 404
     
     if auth.is_inactive_user(username):
-        return jsonify({"message": "Your account is inactive"}), 401
+        return jsonify({"message": "Your account is inactive"}), 403
 
     if auth.login(username, password):
         payload = {"username": username, "exp": datetime.now(timezone.utc) + timedelta(minutes=45)}
@@ -40,7 +40,7 @@ def login():
         return jsonify({"message": "Login successful", "access_token": token}), 200
     else:
         db.close()
-        return jsonify({"message": "Invalid credentials"}), 401
+        return jsonify({"message": "Invalid credentials"}), 403
 
 @auth_bp.route("/logout", methods=["POST"])
 @multiple_tokens_logout

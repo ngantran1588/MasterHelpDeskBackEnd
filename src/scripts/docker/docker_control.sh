@@ -2,7 +2,7 @@
 
 # Function to start Docker containers
 start_container() {
-    docker start $1
+    docker start -a $1
 }
 
 # Function to stop Docker containers
