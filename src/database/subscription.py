@@ -66,8 +66,13 @@ class Subscription:
                 return "2 days left for renewal", False
             elif time_diff.days == 1:
                 return "1 day left for renewal", False
-            elif time_diff.min <= 0:
+            elif time_diff.days < 0:
                 return "Subscription expired", True
+            elif time_diff.days == 0:
+                total_seconds = time_diff.total_seconds()
+                if total_seconds <= 0:
+                    return "Subscription expired", True
+                return "Subscription expired shortly", False
             else:
                 return "Subscription active", False
         except Exception as e:
