@@ -1722,10 +1722,6 @@ def execute_code(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
 
-    if not server_manager.check_user_access(username, server_id):
-        db.close()
-        return jsonify({"message": "Permission denied"}), 403
-
     data = request.get_json()
 
     execute_file = data.get("execute_file")
@@ -1747,6 +1743,7 @@ def execute_code(server_id):
 
     if not server.check_script_exists_on_remote(execute_file):
         db.close()
+        server.disconnect()
         return jsonify({"message": "File does not exist on server"}), 500
 
     execute_code_path = os.environ.get("SCRIPT_PATH_EXECUTE_CODE")
@@ -1772,7 +1769,8 @@ def execute_code(server_id):
         return jsonify({"message":"Can not execute code on server"}), 500
     if stderr:
         error_messages = stderr.split("\n")
-    return jsonify({"lines": lines, "stderr": error_messages}), 200
+        return jsonify({"lines": lines, "stderr": error_messages}), 200
+    return jsonify({"message":"Can not execute code on server"}), 500
 
 @server_bp.route("/report_log_history/<server_id>", methods=["POST"])
 @token_required
@@ -1912,7 +1910,7 @@ def report_raw_history(server_id):
     if stderr:
         error_messages = stderr.split("\n")
         return jsonify({"stderr": error_messages}), 500
-    return stderr, 500
+    return jsonify({"message": "Something is wrong"}), 404
 
 @server_bp.route("/report_log_last/<server_id>", methods=["POST"])
 @token_required
