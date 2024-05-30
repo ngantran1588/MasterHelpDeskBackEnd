@@ -5,13 +5,13 @@
         "use": "@vercel/python", 
         "config": {
           "functions": {
-            "main.py": {
+            "/main.py": {
               "maxDuration": 60
             },
-            "src/api/*.py": {
+            "/src/api/*.py": {
               "maxDuration": 60
             },
-            "src/**/*": {
+            "/src/**/*": {
               "maxDuration": 60
             }
           }  
