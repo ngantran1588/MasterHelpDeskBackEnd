@@ -508,14 +508,10 @@ class Server:
             passphrase = os.environ.get("RSA_PASSPHRASE")
             if result[0][2] != const.NULL_VALUE:
                 pass_from_db = result[0][2]
-                print(pass_from_db)
                 pass_encrypted = ast.literal_eval(pass_from_db)
-                print(pass_encrypted)
                 password = self.decrypt_rsa_key(passphrase.encode(), server_id.encode(), pass_encrypted)
-                print(password)
             else:
                 password = None
-            print(password)
             if result[0][3] != const.NULL_VALUE:
                 rsa_key_from_db = result[0][3]
                 rsa_key_encrypted = ast.literal_eval(rsa_key_from_db)
