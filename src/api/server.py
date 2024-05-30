@@ -1485,7 +1485,7 @@ def docker_create_containers(server_id):
         server.upload_file_to_remote(docker_path, script_directory)
         server.grant_permission(file_in_server, 700)
     db.close()
-    data_return, stderr = server.execute_script_in_remote_server(file_in_server, "create", image, container_name)
+    data_return, stderr = server.execute_script_in_remote_server(file_in_server, "create", container_name, image)
     server.disconnect()
     if data_return:
         data_return = data_return.split("\n")
