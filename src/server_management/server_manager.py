@@ -82,7 +82,23 @@ class ServerManager:
         except Exception as e:
             print(f"Error in checking script: {e}")
             return False
+        
+    def check_file_type(self, remote_file_path):
+        try:
+            stdin, stdout, stderr = self.client.exec_command(f'ls -ld {remote_file_path}')
+            type_output = stdout.read().decode().strip().split()[0]
 
+            # Check first character of type output (could differ based on system)
+            if type_output[0] == "d":
+                return True, "directory"
+            else:
+                return True, "file"
+
+        except Exception as e:
+            print(f"Error in checking script: {e}")
+            return False, None
+
+        
     def execute_script(self, script_path, *args):
         try:
             # Open the script file and read the commands
