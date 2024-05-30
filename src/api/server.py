@@ -2417,7 +2417,7 @@ def download_file(server_id):
 
     if type != "file":
         db.close()
-        return jsonify({"messsage": "Path must be file"}), 400
+        return jsonify({"messsage": "Path must be file"}), 500
 
     local_file_path = os.environ.get("TMP_FOLDER")
     local_file_path = os.path.join(local_file_path, server_id)
@@ -2495,7 +2495,7 @@ def download_folder(server_id):
 
     if type != "folder":
         db.close()
-        return jsonify({"messsage": "Path must be folder"}), 400
+        return jsonify({"messsage": "Path must be folder"}), 500
     
     local_folder_path = os.environ.get("TMP_FOLDER")
     local_folder_path = os.path.join(local_folder_path, server_id)
