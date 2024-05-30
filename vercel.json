@@ -3,11 +3,13 @@
     "builds": [
       { "src": "main.py", 
         "use": "@vercel/python", 
-        "functions": {
-          "src/api/*.py": {
-            "maxDuration": 60
-          }
-        }  
+        "config": {
+          "functions": {
+            "src/api/*.py": {
+              "maxDuration": 60
+            }
+          }  
+        }
       }
     ],
     "routes": [
