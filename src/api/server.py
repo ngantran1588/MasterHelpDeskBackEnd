@@ -581,7 +581,7 @@ def get_remain_slot(organization_id):
     remain_slot = server.get_remain_slot(organization_id)
     db.close()
 
-    if remain_slot:
+    if remain_slot is not None:
         return jsonify({"slot": remain_slot}), 200
     else:
         return jsonify({"message": "Error in querying remain slot"}), 500
@@ -2220,7 +2220,6 @@ def upload_file(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
     upload_folder_tmp = os.environ.get("TMP_FOLDER")
     upload_folder_tmp = os.path.join(upload_folder_tmp, server_id)
     
@@ -2228,6 +2227,8 @@ def upload_file(server_id):
         os.makedirs(upload_folder_tmp)
     except OSError as e:
         if "file already exists" in str(e):  # Check for file/folder existence in error message
+            print(f"Folder '{upload_folder_tmp}' already exists.")
+        elif "File exists" in str(e):
             print(f"Folder '{upload_folder_tmp}' already exists.")
         else:
             print(f"Error creating folder: {e}")
@@ -2306,6 +2307,8 @@ def upload_folder(server_id):
         os.makedirs(upload_folder_tmp)
     except OSError as e:
         if "file already exists" in str(e):  # Check for file/folder existence in error message
+            print(f"Folder '{upload_folder_tmp}' already exists.")
+        elif "File exists" in str(e):
             print(f"Folder '{upload_folder_tmp}' already exists.")
         else:
             print(f"Error creating folder: {e}")
@@ -2407,6 +2410,15 @@ def download_file(server_id):
         db.close()
         return jsonify({"messsage": "File path does not exist"}), 500
     
+    status, type = server.check_file_type(file_path)
+    if not status:
+        db.close()
+        return jsonify({"messsage": "Error in downloading file"}), 500
+
+    if type != "file":
+        db.close()
+        return jsonify({"messsage": "Path must be file"}), 400
+
     local_file_path = os.environ.get("TMP_FOLDER")
     local_file_path = os.path.join(local_file_path, server_id)
 
@@ -2414,6 +2426,8 @@ def download_file(server_id):
         os.makedirs(local_file_path)
     except OSError as e:
         if "file already exists" in str(e):  # Check for file/folder existence in error message
+            print(f"Folder '{local_file_path}' already exists.")
+        elif "File exists" in str(e):
             print(f"Folder '{local_file_path}' already exists.")
         else:
             print(f"Error creating folder: {e}")
@@ -2437,7 +2451,6 @@ def download_folder(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -2475,6 +2488,15 @@ def download_folder(server_id):
         db.close()
         return jsonify({"messsage": "Folder path does not exist"}), 500
     
+    status, type = server.check_file_type(folder_path)
+    if not status:
+        db.close()
+        return jsonify({"messsage": "Error in downloading file"}), 500
+
+    if type != "folder":
+        db.close()
+        return jsonify({"messsage": "Path must be folder"}), 400
+    
     local_folder_path = os.environ.get("TMP_FOLDER")
     local_folder_path = os.path.join(local_folder_path, server_id)
 
@@ -2482,6 +2504,8 @@ def download_folder(server_id):
         os.makedirs(local_folder_path)
     except OSError as e:
         if "file already exists" in str(e):  # Check for file/folder existence in error message
+            print(f"Folder '{local_folder_path}' already exists.")
+        elif "File exists" in str(e):
             print(f"Folder '{local_folder_path}' already exists.")
         else:
             print(f"Error creating folder: {e}")

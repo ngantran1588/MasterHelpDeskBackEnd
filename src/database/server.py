@@ -393,18 +393,8 @@ class Server:
             if existing_user:
                 return False, f"User '{new_user}' already exists in the server."
 
-            # Retrieve user's role from tbl_customer (assuming new_user maps to a customer)
-            user_role_query = "SELECT role_id FROM tbl_customer WHERE username = %s"
-            user_role_values = (new_user,)
-            user_roles = self.db.execute_query(user_role_query, user_role_values)
-
-            # Handle potential errors or no role found in tbl_customer
-            if not user_roles:
-                # Consider using a default role or handling the missing role scenario
-                return False, f"Could not retrieve role for user '{new_user}'."
-
             # Extract the first role 
-            user_role = user_roles[0][0][0]  
+            user_role = const.ROLE_ID_USER
 
             # Create dictionary for the new user with retrieved role
             new_user_info = {"member": new_user, "role": [user_role]}
