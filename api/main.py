@@ -1,4 +1,7 @@
 from flask import Flask
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 from src.api.auth import auth_bp
 from src.api.organization import organization_bp
 from src.api.manager import manager_bp
@@ -30,20 +33,3 @@ app.register_blueprint(billing_bp, url_prefix="/billing")
 
 if __name__ == "__main__":
     app.run()
-
-    # # Replace these with your server details
-    # server_hostname = os.environ.get("SERVER_HOSTNAME")
-    # server_username = os.environ.get("SERVER_USERNAME")
-    # private_key_path = os.environ.get("PRIVATE_KEY_PATH")
-    # script_path = os.environ.get("SCRIPT_PATH")
-
-    # # Initialize the ServerManager with private key authentication
-    # server_manager = ServerManager(server_hostname, server_username, private_key_path=private_key_path)
-
-    # # Connect to the server
-    # server_manager.connect()
-
-    # server_manager.upload_file_to_remote("src/scripts/execute_code/execute_code.sh", "/root/julia")
-
-    # # Disconnect from the server
-    # server_manager.disconnect()
