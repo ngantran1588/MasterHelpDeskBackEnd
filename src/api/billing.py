@@ -261,3 +261,30 @@ def get_billing_status_by_customer_id():
         return jsonify(billing_info), 200
     else:
         return jsonify({"message": "Billing record not found"}), 404
+    
+@billing_bp.route("/get_billing_by_customer_id", methods=["GET"])
+@token_required
+def get_billing_by_customer_id():
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    billing = Billing(db)
+    auth = Auth(db)
+
+    username = request.jwt_payload.get("username")
+   
+    if username == None:
+        return jsonify({"message": "Permission denied"}), 403
+
+    data = request.get_json()
+    status = data.get(status)
+    if not status:
+        return jsonify({"message": "Status not found"}), 500
+    customer_id = auth.get_customer_id_from_username(username)
+    billing_info = billing.get_billing_by_customer_id(customer_id)
+    db.close()
+    
+    if billing_info:
+        return jsonify(billing_info), 200
+    else:
+        return jsonify({"message": "Billing record not found"}), 404

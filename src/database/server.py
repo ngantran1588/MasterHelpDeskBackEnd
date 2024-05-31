@@ -197,12 +197,12 @@ class Server:
     def get_remain_slot(self, organization_id: str):
         try:
             total_slot = self.get_total_slot(organization_id)
-            if not total_slot:
+            if not total_slot and total_slot != 0:
                 print("Error checking remain_slot")
                 return None
             
             current_slot = self.get_current_slot(organization_id)
-            if not current_slot:
+            if not current_slot and current_slot != 0:
                 print("Error checking remain_slot")
                 return None
             remain_slot = total_slot - current_slot
