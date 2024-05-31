@@ -2476,7 +2476,7 @@ def download_folder(server_id):
         db.close()
         return jsonify({"messsage": "Error in downloading file"}), 500
 
-    if type != "folder":
+    if type != "directory":
         db.close()
         return jsonify({"messsage": "Path must be folder"}), 500
     
