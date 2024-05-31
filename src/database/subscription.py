@@ -13,8 +13,8 @@ class Subscription:
         value_customer = (username,)
         customer_data = self.db.execute_query(query_customer, value_customer)
         try:
-            query = """SELECT subscription_id FROM tbl_subscription WHERE customer_id = %s"""
-            value = (customer_data[0])
+            query = """SELECT subscription_id FROM tbl_subscription WHERE customer_id = %s AND subscription_status = %s"""
+            value = (customer_data[0], const.STATUS_ACTIVE)
             result = self.db.execute_query(query, value)
             
             if result:
@@ -57,6 +57,7 @@ class Subscription:
             print("Subscription status updated successfully.")
         except Exception as e:
             print("Error updating subscription status:", e)
+
     def check_expiration(self, expiration_date: datetime) -> str:
         expiration_date = expiration_date.astimezone(timezone.utc)
 

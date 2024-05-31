@@ -24,7 +24,7 @@ def login():
     manager_password = data['manager_password']
 
     if auth.login(manager_username, manager_password):
-        payload = {"manager_username": manager_username, "exp": datetime.now(timezone.utc) + timedelta(minutes=45)}
+        payload = {"manager_username": manager_username, "exp": datetime.now(timezone.utc) + timedelta(minutes=120)}
         token = jwt.encode(payload, os.environ.get("JWT_SECRET_KEY"), algorithm="HS256")
         db.close()
         return jsonify({"message": "Login successful", "access_token": token}), 200
