@@ -341,7 +341,6 @@ def get_user_in_organization(organization_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     org = Organization(db)
-    auth = Auth(db)
 
     if not organization_id:
         db.close()
@@ -356,11 +355,11 @@ def get_user_in_organization(organization_id):
         db.close()
         return jsonify({"message": "Organization ID is required"}), 400
 
-    users_and_roles = org.get_user_organization(organization_id)
+    users = org.get_user_organization(organization_id)
     db.close()
 
-    if users_and_roles is not None:
-        return jsonify(users_and_roles), 200
+    if users is not None:
+        return jsonify(users), 200
     else:
         return jsonify({"message": "Failed to get users and roles"}), 500
     

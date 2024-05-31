@@ -349,14 +349,13 @@ class Organization:
             if len(result) == 0:
                 return None
             
-            user_roles = []
+            users = []
             for org_info in result:
-                org_members = org_info[0]  # Assuming org_member is a list of usernames
+                org_members = org_info[0]  
                 for username in org_members:
-                    roles = self.get_user_roles(username)
-                    user_roles.append({"username": username, "roles": roles})
+                    users.append({"username": username})
 
-            return user_roles
+            return users
         except Exception as e:
             print("Error getting user organization:", e)
 
