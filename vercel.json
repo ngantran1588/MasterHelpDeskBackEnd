@@ -1,9 +1,6 @@
 {
   "version": 2,
   "functions": {
-    "/main.py": {
-      "maxDuration": 60
-    },
     "main.py": {
       "maxDuration": 60
     },
