@@ -651,7 +651,6 @@ def get_all_proxy(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -708,7 +707,6 @@ def update_proxy(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -780,7 +778,6 @@ def add_proxy(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -847,7 +844,6 @@ def delete_proxy(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -920,7 +916,6 @@ def lib_status(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -981,7 +976,6 @@ def install_lib(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1053,7 +1047,6 @@ def uninstall_lib(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1125,7 +1118,6 @@ def firewall_action(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1225,7 +1217,6 @@ def firewall_rules(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1297,7 +1288,6 @@ def docker_build(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1313,7 +1303,6 @@ def docker_build(server_id):
         db.close()
         return jsonify({"message": "Permission denied"}), 403
  
-    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -1373,7 +1362,6 @@ def docker_containers(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1437,7 +1425,6 @@ def docker_create_containers(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1502,7 +1489,6 @@ def docker_compose(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1567,7 +1553,6 @@ def docker_list_images(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1636,7 +1621,6 @@ def docker_list_containers(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1729,6 +1713,12 @@ def execute_code(server_id):
         db.close()
         return jsonify({"message":"Execute file is required"}), 500
     
+    file_type = execute_file.split(".")[-1]
+    support_file = ["py","go", "js"]
+    if file_type not in support_file:
+        db.close()
+        return jsonify({"message":"Unsupported file"}), 500
+    
     server_info = server_manager.get_info_to_connect(server_id)
     if server_info == None:
         db.close()
@@ -1781,7 +1771,6 @@ def report_log_history(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1844,7 +1833,6 @@ def report_raw_history(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1921,7 +1909,6 @@ def report_log_last(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -1986,7 +1973,6 @@ def report_raw_log_last(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -2063,7 +2049,6 @@ def report_log_ufw(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -2126,7 +2111,6 @@ def report_raw_log_ufw(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
@@ -2299,7 +2283,7 @@ def upload_folder(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
+   
     upload_folder_tmp = os.environ.get("TMP_FOLDER")
     upload_folder_tmp = os.path.join(upload_folder_tmp, server_id)
     
@@ -2372,7 +2356,6 @@ def download_file(server_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     server_manager = Server(db)
-    auth = Auth(db)
 
     if not server_id:
         db.close()
