@@ -63,6 +63,11 @@ def check_expiration():
     customer_id = auth.get_customer_id_from_username(username) 
 
     subscription_info = sub.get_subscriptions_by_customer_id(customer_id)
+
+    if not subscription_info:
+        db.close()
+        return jsonify({"message": "Did not buy subcription", "status": False}), 200
+
     subscription_id = subscription_info[0]["subscription_id"]
     subscription = sub.get_subscription_by_id(subscription_id)
 
