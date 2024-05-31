@@ -1,4 +1,7 @@
 from flask import Flask
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 from src.api.auth import auth_bp
 from src.api.organization import organization_bp
 from src.api.manager import manager_bp
