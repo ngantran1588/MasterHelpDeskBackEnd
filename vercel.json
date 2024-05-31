@@ -3,6 +3,12 @@
   "functions": {
     "main.py": {
       "maxDuration": 60
+    },
+    "src/api/*.py": {
+      "maxDuration": 60
+    },
+    "src/**/*": {
+      "maxDuration": 60
     }
   },
   "routes": [
