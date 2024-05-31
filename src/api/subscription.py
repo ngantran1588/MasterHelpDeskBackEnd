@@ -36,10 +36,28 @@ def update_subscription_status(subscription_id):
     db = connector.DBConnector(*db_env)
     db.connect()
     sub = Subscription(db)
+    auth = Auth(db)
+    org = Organization(db)
+
+    username = request.jwt_payload.get("username")
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
 
     data = request.get_json()
     new_status = data.get("new_status")
-
+    
+    if new_status == const.STATUS_INACTIVE:
+        auth.change_role_to_user(username)
+        organization_id = org.get_organization_id_by_sub(subscription_id)
+        if not organization_id:
+            db.close()
+            return jsonify({"message": "Error in querying database."}), 500
+        result = org.change_organization_status(organization_id, const.STATUS_INACTIVE)
+        if not result:
+            db.close()
+            return jsonify({"message": "Error in querying database."}), 500
+        
     sub.update_subscription_status(subscription_id, new_status)
     db.close()
 

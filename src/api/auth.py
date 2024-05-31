@@ -33,7 +33,7 @@ def login():
         return jsonify({"message": "Your account is inactive"}), 403
 
     if auth.login(username, password):
-        payload = {"username": username, "exp": datetime.now(timezone.utc) + timedelta(minutes=45)}
+        payload = {"username": username, "exp": datetime.now(timezone.utc) + timedelta(minutes=120)}
         token = jwt.encode(payload, os.environ.get("JWT_SECRET_KEY"), algorithm="HS256")
         db.close()
         return jsonify({"message": "Login successful", "access_token": token}), 200

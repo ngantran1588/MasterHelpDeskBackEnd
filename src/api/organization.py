@@ -383,3 +383,27 @@ def get_remain_slot():
         return jsonify({"remain_slot": remain_slot}), 200
     else:
         return jsonify({"message": "Failed to get remain slot"}), 500    
+    
+@organization_bp.route("/check_creator/<organization_id>", methods=["GET"])
+@token_required
+def check_creator(organization_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    org = Organization(db)
+
+    username = request.jwt_payload.get("username")
+    if username is None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+
+    creator = org.get_creator(organization_id)
+    db.close()
+
+    if not creator:
+        return jsonify({"message": "Failed to check creator"}), 500 
+    
+    if username == creator:
+        return jsonify({"message": "Creator allowed"}), 200
+    return jsonify({"message": "Permission denied"}), 403
+    

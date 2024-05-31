@@ -221,13 +221,13 @@ class Organization:
     def get_remain_slot(self, username: str):
         try:
             total_slot = self.get_total_slot(username)
-            if total_slot is None:
+            if total_slot is None and total_slot != 0:
                 print("Error checking total slot")
                 return None
             
             current_slot = self.get_current_slot(username)
             
-            if current_slot is None:
+            if current_slot is None and current_slot != 0:
                 print("Error checking remain slot")
                 return None
             remain_slot = total_slot - current_slot
@@ -358,6 +358,22 @@ class Organization:
             return users
         except Exception as e:
             print("Error getting user organization:", e)
+
+    def get_creator(self, organization_id: str):
+        query = """SELECT org_member FROM tbl_organization WHERE organization_id = %s"""
+        values = (organization_id,)
+
+        try:
+            result = self.db.execute_query(query, values)
+            print("Query organization successful!")
+            if len(result) == 0:
+                return None
+            org_creator = result[0][0]
+            
+            return org_creator
+        except Exception as e:
+            print("Error getting user organization:", e)
+            return None
 
     def get_user_roles(self, username: str):
         query = """
