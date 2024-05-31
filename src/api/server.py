@@ -8,6 +8,7 @@ from ..database import connector
 from ..database.server import Server 
 from ..database.load_env import LoadDBEnv
 from ..database.auth import Auth
+from ..database.organization import Organization 
 from ..const import const
 from ..decorators import token_required
 from ..server_management.server_manager import *
@@ -407,6 +408,29 @@ def get_server_in_organization(organization_id):
     else:
         return jsonify({"message": "No servers found for the organization"}), 404
 
+@server_bp.route("/check_server_access/<server_id>", methods=["GET"])
+@token_required
+def check_server_access(server_id):
+    db_env = LoadDBEnv.load_db_env()
+    db = connector.DBConnector(*db_env)
+    db.connect()
+    server_manager = Server(db)
+    username = request.jwt_payload.get("username")
+
+    if not server_id:
+        db.close()
+        return jsonify({"message": "Server ID is required."}), 400
+   
+    if username == None:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    if server_manager.check_user_access(username, server_id) == False:
+        db.close()
+        return jsonify({"message": "Permission denied"}), 403
+    
+    return jsonify({"message": "Access allowed"}), 200
+    
 @server_bp.route("/add_member/<server_id>", methods=["PUT"])
 @token_required
 def add_member(server_id):
@@ -415,6 +439,7 @@ def add_member(server_id):
     db.connect()
     server = Server(db)
     auth = Auth(db)
+    org = Organization(db)
 
     username = request.jwt_payload.get("username")
 
@@ -423,6 +448,7 @@ def add_member(server_id):
         return jsonify({"message": "Permission denied"}), 403
 
     new_user = request.json["new_user"]
+    organization_id = request.json["organization_id"]
 
     if not auth.exist_username(new_user):
         db.close()
@@ -431,6 +457,11 @@ def add_member(server_id):
     if server.check_user_access(username, server_id) == False:
         db.close()
         return jsonify({"message": "Permission denied"}), 403
+    
+    if org.check_user_access(new_user, organization_id) == False:
+        db.close()
+        return jsonify({"message": "User does not exist in Organization"}), 404
+
     success, msg = server.add_member(server_id, new_user)
 
     db.close()
