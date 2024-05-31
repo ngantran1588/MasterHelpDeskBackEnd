@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from ..database import connector
 from ..database.auth import Auth
-from ..database.role import Role
 from ..database.load_env import LoadDBEnv
 from ..database.blacklist_token import BlackListToken
 from datetime import datetime, timedelta, timezone
