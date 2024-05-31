@@ -3,7 +3,6 @@
   "builds": [
     {
       "src": "/(.*)",
-      "dest": "main.py",
       "use": "@vercel/python",
       "functions": {
         "src/api/*.py": { "maxDuration": 60 }
