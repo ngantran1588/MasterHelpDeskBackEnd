@@ -1,8 +1,7 @@
 {
   "version": 2,
   "functions": {
-    "api/*": { "maxDuration": 60 },
-    "src/api/*": { "maxDuration": 60 }
+    "api/*": { "maxDuration": 60 }
   },
   "routes": [
     { "src": "/(.*)", "dest": "api/main.py" }
