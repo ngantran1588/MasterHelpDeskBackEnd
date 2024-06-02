@@ -85,7 +85,7 @@ def handle_transaction():
                 db.close()
                 return jsonify({"message": "Error in updating database"}), 500
             org.change_organization_status(organization_id, const.STATUS_ACTIVE)
-            billing.update_billing_status(billing_id, const.BILLING_STATUS_SUCCESS)
+            billing.update_success_transaction(billing_id, const.BILLING_STATUS_SUCCESS, subscription_id)
             db.close()
             return jsonify({"message": "Billing successful"}), 204
         else:
@@ -123,7 +123,7 @@ def after_transaction(billing_id):
         if billing_info["billing_status"] == "ACTIVE":
             email = auth.get_email_from_username(username)
             billing.send_email(email, billing_info)
-        return jsonify({"billing_info": billing_info}), 200
+    return jsonify({"billing_info": billing_info}), 200
 
 @billing_bp.route("/delete_billing/<billing_id>", methods=["DELETE"])
 @token_required
