@@ -97,8 +97,7 @@ class ServerManager:
         except Exception as e:
             print(f"Error in checking script: {e}")
             return False, None
-
-        
+      
     def execute_script(self, script_path, *args):
         try:
             # Open the script file and read the commands

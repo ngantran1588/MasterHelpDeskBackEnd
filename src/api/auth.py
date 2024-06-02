@@ -72,7 +72,7 @@ def sign_up():
 
     if auth.exist_username(username):
         db.close()
-        return jsonify({"message": "Email existed"}), 500      
+        return jsonify({"message": "Username existed"}), 500      
 
     if auth.exist_email(email):
         db.close()
