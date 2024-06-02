@@ -223,7 +223,7 @@ def remove_user():
         return jsonify({"message": "Permission denied"}), 403
     
     server_list = server.get_server_in_organization(organization_id)
-    if server_item is not None and len(server) > 0:
+    if server_list is not None and len(server_list) > 0:
         for server_item in server_list:
             server_id = server_item["server_id"]
             if server.check_user_access(remove_username, server_id):
