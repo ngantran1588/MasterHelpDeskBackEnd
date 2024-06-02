@@ -36,7 +36,7 @@ def parse_history_regex(log_message):
 
 def parse_ufwlog_regex(log_message):
     # Regex pattern to capture timestamp (flexible on separators) and host
-    pattern = r"(\w+\s\d+\s\d+:\d+:\d+)(\s.*\s)(kernel.*)"
+    pattern = r"(\w+\s+\d+\s\d+:\d+:\d+)(\s.*\s)(kernel.*)"
 
     # Match the pattern and extract groups
     match = re.match(pattern, log_message)
@@ -2126,6 +2126,10 @@ def report_log_ufw(server_id):
         for line in lines:
             timestamp, host, log = parse_ufwlog_regex(line)
             if timestamp == None or host == None or log == None:
+                print(line)
+                print(timestamp)
+                print(host)
+                print(log)
                 return jsonify({"message": "Error in parsing log"}), 500
             
             parsed_log.append({"timestamp": timestamp, "host": host, "log": log})
