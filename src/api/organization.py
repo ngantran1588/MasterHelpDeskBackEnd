@@ -3,6 +3,7 @@ from ..database import connector
 from ..database.organization import Organization 
 from ..database.load_env import LoadDBEnv
 from ..database.auth import Auth
+from ..database.server import Server
 from ..decorators import token_required
 
 organization_bp = Blueprint("organization", __name__)
@@ -206,6 +207,7 @@ def remove_user():
     db = connector.DBConnector(*db_env)
     db.connect()
     org = Organization(db)
+    server = Server(db)
 
     username = request.jwt_payload.get("username")
 
@@ -220,6 +222,13 @@ def remove_user():
         db.close()
         return jsonify({"message": "Permission denied"}), 403
     
+    server_list = server.get_server_in_organization(organization_id)
+    if server_item is not None and len(server) > 0:
+        for server_item in server_list:
+            server_id = server_item["server_id"]
+            if server.check_user_access(remove_username, server_id):
+                server.remove_member(server_id, remove_username)
+
     success, msg = org.remove_user(organization_id, remove_username)
 
     db.close()

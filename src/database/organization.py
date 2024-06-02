@@ -397,7 +397,7 @@ class Organization:
 
     def get_organization_id_by_sub(self, subscription_id: str) :
         query = """SELECT organization_id FROM tbl_organization WHERE subscription_id = %s"""
-        values = (subscription_id)
+        values = (subscription_id,)
 
         try:
             result = self.db.execute_query(query, values)
@@ -409,3 +409,4 @@ class Organization:
             return organization_info    
         except Exception as e:
             print("Error querying organization:", e)
+            return None

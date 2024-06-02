@@ -339,7 +339,7 @@ class Server:
             return servers
         except Exception as e:
             print("Error getting server number:", e)
-            return False
+            return None
     
     def check_server_name_exist(self, name: str, organization_id: str) -> bool:
         query = "SELECT COUNT(*) FROM tbl_server WHERE server_name = %s AND organization_id = %s"

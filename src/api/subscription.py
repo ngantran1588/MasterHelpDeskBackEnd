@@ -51,8 +51,9 @@ def update_subscription_status(subscription_id):
         auth.change_role_to_user(username)
         organization_id = org.get_organization_id_by_sub(subscription_id)
         if not organization_id:
+            sub.update_subscription_status(subscription_id, new_status)
             db.close()
-            return jsonify({"message": "Error in querying database."}), 500
+            return jsonify({"message": "Subscription status updated successfully."}), 200
         result = org.change_organization_status(organization_id, const.STATUS_INACTIVE)
         if not result:
             db.close()
