@@ -277,6 +277,7 @@ class Billing:
         timestamp = billing["timestamp"]
         amount = billing["amount"]
         sub_id = billing["subscription_id"]
+        amount = f"{amount:.0f}"
 
         text = """
             <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -654,7 +655,7 @@ class Billing:
 
             </html>
 
-        """.replace("{billing_id}", billing_id).replace("{timestamp}", str(timestamp)). replace("{amount}", str(int(amount))).replace("{sub_id}", sub_id)
+        """.replace("{billing_id}", billing_id).replace("{timestamp}", str(timestamp)). replace("{amount}", str(amount)).replace("{sub_id}", sub_id)
 
         message.attach(MIMEText(text, "html"))
         gmail_host = os.environ.get("GMAIL_HOST")
