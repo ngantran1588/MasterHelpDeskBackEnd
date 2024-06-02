@@ -148,7 +148,7 @@ class Billing:
                 "subscription_id": billing_info[2],
                 "timestamp": billing_info[3],
                 "billing_status": billing_info[4],
-                "amount": billing_info[5],
+                "amount": str(billing_info[5]),
             }
 
             return billing
@@ -272,6 +272,11 @@ class Billing:
         message["From"] = sender_email
         message["To"] = receiver_email
         message["Subject"] = "[MHD] Transaction Successful"
+
+        billing_id = billing["billing_id"]
+        timestamp = billing["timestamp"]
+        amount = billing["amount"]
+        sub_id = billing["subscription_id"]
 
         text = """
             <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -544,7 +549,6 @@ class Billing:
                                             <p style="line-height: 140%;">Platform: <strong>Momo</strong></p>
                                             <p style="line-height: 140%;">Subscription ID: <strong>{sub_id}</strong></p>
                                         </div>
-
                                         </td>
                                     </tr>
                                     </tbody>
@@ -650,7 +654,7 @@ class Billing:
 
             </html>
 
-        """.format(billing_id=billing["billing_id"], timestamp=billing["timestamp"], amount=billing["amount"], sub_id=billing["subscription_id"])
+        """.replace("{billing_id}", billing_id).replace("{timestamp}", str(timestamp)). replace("{amount}", str(int(amount))).replace("{sub_id}", sub_id)
 
         message.attach(MIMEText(text, "html"))
         gmail_host = os.environ.get("GMAIL_HOST")

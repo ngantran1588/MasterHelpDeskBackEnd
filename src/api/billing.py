@@ -116,13 +116,14 @@ def after_transaction(billing_id):
         return jsonify({"message": "Permission denied"}), 403
 
     billing_info = billing.get_billing_by_id(billing_id)
-    db.close()
     if billing_info == None:
+        db.close()
         return jsonify({"message": "Can not get billing info from db"}), 500
     else:
-        if billing_info["billing_status"] == "ACTIVE":
+        if billing_info["billing_status"] == "SUCCESS":
             email = auth.get_email_from_username(username)
             billing.send_email(email, billing_info)
+    db.close()
     return jsonify({"billing_info": billing_info}), 200
 
 @billing_bp.route("/delete_billing/<billing_id>", methods=["DELETE"])
