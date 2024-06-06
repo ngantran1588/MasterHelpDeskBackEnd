@@ -1182,7 +1182,7 @@ def firewall_action(server_id):
     if not result:
         db.close()
         return jsonify({"message": "Can not connect server"}), 500
-    arg = None
+    arg = ""
     if action == "allow_ip":
         action_path = os.environ.get("SCRIPT_PATH_ALLOW_IP")
         if not ip or ip == "":
@@ -1221,12 +1221,12 @@ def firewall_action(server_id):
         action_path = os.environ.get("SCRIPT_PATH_ALLOW_TELNET")
     elif action == "deny_telnet":
         action_path = os.environ.get("SCRIPT_PATH_DENY_TELNET")
-    
+
     script_directory = os.environ.get("SERVER_DIRECTORY")
     
     file_name = server.get_file_name(action_path)
     file_in_server = f"{script_directory}/{file_name}"
-
+    
     if not server.check_script_exists_on_remote(file_in_server):
         server.upload_file_to_remote(action_path, script_directory)
         server.grant_permission(file_in_server, 700)
